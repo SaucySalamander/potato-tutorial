@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use winit::{
-    event::{DeviceEvent, ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::Window,
+    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
+    window::{Window, WindowId, WindowBuilder},
 };
 
 pub fn init() {
     simple_logger::init().unwrap();
-    let event_loop = EventLoop::new();
+    init_event_loop(EventLoop::new());
+}
 
-    let mut windows = HashMap::new();
-    let window = Window::new(&event_loop).unwrap();
-    windows.insert(window.id(), window);
+fn init_event_loop<>(event_loop: EventLoop<()>){
+    
+    let mut windows = init_base_win(&event_loop);
 
     event_loop.run(move |event, event_loop, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -25,17 +26,11 @@ pub fn init() {
                         *control_flow = ControlFlow::Exit;
                     }
                 }
-            }
-            Event::DeviceEvent { event, .. } => {
-                if let DeviceEvent::Key(KeyboardInput {
-                    virtual_keycode,
-                    state,
-                    ..
-                }) = event
-                {
-                    if state == ElementState::Released && virtual_keycode == Some(VirtualKeyCode::N)
+
+                if let WindowEvent::KeyboardInput{input: KeyboardInput{ virtual_keycode, state, ..}, is_synthetic,  ..} = event {
+                    if state == ElementState::Released && virtual_keycode == Some(VirtualKeyCode::N) && !is_synthetic
                     {
-                        let window = Window::new(&event_loop).unwrap();
+                        let window = spawn_win(event_loop, "spawn");
                         windows.insert(window.id(), window);
                     }
                 }
@@ -48,4 +43,15 @@ pub fn init() {
             _ => (),
         }
     })
+}
+
+fn init_base_win(event_loop: &EventLoop<()>) -> HashMap<WindowId, Window> {
+    let mut hm = HashMap::new();
+    let window = spawn_win(event_loop, "origin");
+    hm.insert(window.id(), window);
+    hm
+}
+
+fn spawn_win(event_loop: &EventLoopWindowTarget<()>, name: &str) -> Window{
+    WindowBuilder::new().with_title(name).build(event_loop).unwrap()
 }
