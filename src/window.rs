@@ -7,6 +7,7 @@ use winit::{
 
 pub fn init() {
     simple_logger::init().unwrap();
+    //TODO Add surface init
     init_event_loop(EventLoop::new());
 }
 
@@ -27,7 +28,7 @@ fn init_event_loop<>(event_loop: EventLoop<()>){
                     }
                 }
 
-                if let WindowEvent::KeyboardInput{input: KeyboardInput{ virtual_keycode, state, ..}, is_synthetic,  ..} = event {
+                if let WindowEvent::KeyboardInput{input: KeyboardInput{ virtual_keycode, state, ..}, is_synthetic,  ..} = event { //TODO abstract keyboard input logic
                     if state == ElementState::Released && virtual_keycode == Some(VirtualKeyCode::N) && !is_synthetic
                     {
                         let window = spawn_win(event_loop, "spawn");

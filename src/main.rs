@@ -1,7 +1,8 @@
 mod window;
-mod file;
+mod io;
+
+//use crate::io::file::{read_file_to_str, write_file, append_file};
 use window::init;
-// use file::{read_file_to_str, write_file, append_file};
 
 fn main() {
     // let _ = read_file_to_str("./config.yaml".as_ref());
