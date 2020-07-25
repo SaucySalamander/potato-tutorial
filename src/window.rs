@@ -10,10 +10,12 @@ use winit::{
 };
 use vulkano::swapchain::{Surface};
 use std::sync::Arc;
+use vulkano::instance::Instance;
 
-pub fn init() {
+
+pub fn init_windows(event_loop: EventLoop<()>) {
     simple_logger::init().unwrap();
-    init_event_loop(EventLoop::new());
+    init_event_loop(event_loop);
 }
 
 fn init_event_loop<>(event_loop: EventLoop<()>){
@@ -58,7 +60,7 @@ fn init_base_win(event_loop: &EventLoop<()>) -> HashMap<WindowId, Arc<Surface<Wi
     hm
 }
 
-fn spawn_win(event_loop: &EventLoopWindowTarget<()>, name: &str) -> Arc<Surface<Window>>{
+pub fn spawn_win(event_loop: &EventLoopWindowTarget<()>, name: &str) -> Arc<Surface<Window>>{
     let instance = create_instance();
     WindowBuilder::new().with_title(name).build_vk_surface(event_loop, instance).unwrap()
 }
