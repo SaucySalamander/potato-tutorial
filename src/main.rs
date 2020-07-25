@@ -1,5 +1,6 @@
 mod window;
 mod io;
+mod vulkan;
 
 //use crate::io::file::{read_file_to_str, write_file, append_file};
 use window::init;
