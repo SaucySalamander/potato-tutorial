@@ -1,66 +1,76 @@
-#[path = "vulkan/mod.rs"]
-mod vulkan;
-use vulkan::vulk_init::create_instance;
-use vulkano_win::VkSurfaceBuild;
 use std::collections::HashMap;
 use winit::{
+    dpi::LogicalSize,
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowId, WindowBuilder},
+    window::{Window, WindowBuilder, WindowId},
 };
-use vulkano::swapchain::{Surface};
-use std::sync::Arc;
-use vulkano::instance::Instance;
 
-
-pub fn init_windows(event_loop: EventLoop<()>) {
-    simple_logger::init().unwrap();
-    init_event_loop(event_loop);
+pub struct VulkanWindow {
+    pub windows: HashMap<WindowId, Window>,
 }
 
-fn init_event_loop<>(event_loop: EventLoop<()>){
-    
-    let mut windows = init_base_win(&event_loop);
+impl VulkanWindow {
 
-    event_loop.run(move |event, event_loop, control_flow| {
-        *control_flow = ControlFlow::Wait;
+    pub fn init(event_loop: &EventLoopWindowTarget<()>) -> VulkanWindow {
+        let mut vulkan_window = VulkanWindow{
+            windows: HashMap::new(),
+        };
+        let window = VulkanWindow::init_window(&vulkan_window, &event_loop, "origin");
+        vulkan_window.windows.insert(window.id(), window);
+        vulkan_window
+    }
 
-        match event {
-            Event::WindowEvent { event, window_id } => {
-                if let WindowEvent::CloseRequested = event {
-                    println!("Window {:?} has received the signal to close", window_id);
-                    windows.remove(&window_id);
-                    if windows.is_empty() {
-                        *control_flow = ControlFlow::Exit;
+    fn init_window(&self, event_loop: &EventLoopWindowTarget<()>, name: &str) -> Window {
+        WindowBuilder::new()
+            .with_title(name)
+            .with_inner_size(LogicalSize::new(800, 600))
+            .build(event_loop)
+            .expect("Failed to create window.")
+    }
+
+    pub fn init_event_loop(mut self, event_loop: EventLoop<()>) {
+        event_loop.run(move |event, event_loop, control_flow| {
+            *control_flow = ControlFlow::Wait;
+
+            match event {
+                Event::WindowEvent { event, window_id } => {
+                    if let WindowEvent::CloseRequested = event {
+                        println!("Window {:?} has received the signal to close", window_id);
+                        self.windows.remove(&window_id);
+                        if self.windows.is_empty() {
+                            *control_flow = ControlFlow::Exit;
+                        }
                     }
-                }
 
-                if let WindowEvent::KeyboardInput{input: KeyboardInput{ virtual_keycode, state, ..}, is_synthetic,  ..} = event { //TODO abstract keyboard input logic
-                    if state == ElementState::Released && virtual_keycode == Some(VirtualKeyCode::N) && !is_synthetic
+                    if let WindowEvent::KeyboardInput {
+                        input:
+                            KeyboardInput {
+                                virtual_keycode,
+                                state,
+                                ..
+                            },
+                        is_synthetic,
+                        ..
+                    } = event
                     {
-                        let window = spawn_win(event_loop, "spawn");
-                        windows.insert(window.window().id(), window);
+                        //TODO abstract keyboard input logic
+                        if state == ElementState::Released
+                            && virtual_keycode == Some(VirtualKeyCode::N)
+                            && !is_synthetic
+                        {
+                            let window = self.init_window(event_loop, "spawn");
+                            self.windows.insert(window.id(), window);
+                        }
                     }
                 }
-            }
-            Event::MainEventsCleared => {
-                for (.., window) in windows.iter() {
-                    window.window().request_redraw();
+                Event::MainEventsCleared => {
+                    for (.., window) in self.windows.iter() {
+                        window.request_redraw();
+                    }
                 }
+                _ => (),
             }
-            _ => (),
-        }
-    })
-}
-
-fn init_base_win(event_loop: &EventLoop<()>) -> HashMap<WindowId, Arc<Surface<Window>>> {
-    let mut hm = HashMap::new();
-    let window = spawn_win(event_loop, "origin");
-    hm.insert(window.window().id(), window);
-    hm
-}
-
-pub fn spawn_win(event_loop: &EventLoopWindowTarget<()>, name: &str) -> Arc<Surface<Window>>{
-    let instance = create_instance();
-    WindowBuilder::new().with_title(name).build_vk_surface(event_loop, instance).unwrap()
+        })
+    }
 }
