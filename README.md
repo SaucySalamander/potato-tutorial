@@ -4,7 +4,7 @@ This is a practice project. I am using it to get more familiar with the Rust pro
 
 ## Current Objective
 
-Create a simple program that can render graphic to the screen.
+Create a simple program that can render graphics to the screen.
 
 ## Current progress
 
