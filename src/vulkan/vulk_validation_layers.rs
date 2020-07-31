@@ -1,13 +1,13 @@
-use ash::vk::{
-    DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
-    DebugUtilsMessengerCallbackDataEXT, Bool32, DebugUtilsMessengerEXT
-};
-use std::os::raw::c_void;
-use std::ffi::CStr;
-use log::{debug};
-use ash::{Entry, Instance};
-use ash::extensions::ext::{DebugUtils};
+use ash::extensions::ext::DebugUtils;
 use ash::vk;
+use ash::vk::{
+    Bool32, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
+    DebugUtilsMessengerCallbackDataEXT, DebugUtilsMessengerEXT,
+};
+use ash::{Entry, Instance};
+use log::debug;
+use std::ffi::CStr;
+use std::os::raw::c_void;
 
 pub struct ValidationInfo {
     pub is_enable: bool,
@@ -44,31 +44,35 @@ unsafe extern "system" fn vulkan_debug_utils_callback(
     ash::vk::FALSE
 }
 
-pub fn setup_debug_utils(entry: &Entry, instance: &Instance) -> (DebugUtils, DebugUtilsMessengerEXT) {
+pub fn setup_debug_utils(
+    entry: &Entry,
+    instance: &Instance,
+) -> (DebugUtils, DebugUtilsMessengerEXT) {
     let debug_util_loader = DebugUtils::new(entry, instance);
 
-    if VALIDATION.is_enable == false {
+    if !VALIDATION.is_enable {
         (debug_util_loader, DebugUtilsMessengerEXT::null())
     } else {
         let messenger_ci = populate_debug_messenger_create_info();
 
         let utils_messenger = unsafe {
-            debug_util_loader.create_debug_utils_messenger(&messenger_ci, None).expect("Debug Utils Callback")
+            debug_util_loader
+                .create_debug_utils_messenger(&messenger_ci, None)
+                .expect("Debug Utils Callback")
         };
         (debug_util_loader, utils_messenger)
     }
-
 }
 
-fn populate_debug_messenger_create_info() -> vk::DebugUtilsMessengerCreateInfoEXT {
+pub fn populate_debug_messenger_create_info() -> vk::DebugUtilsMessengerCreateInfoEXT {
     vk::DebugUtilsMessengerCreateInfoEXT {
         s_type: vk::StructureType::DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
         p_next: std::ptr::null(),
         flags: vk::DebugUtilsMessengerCreateFlagsEXT::empty(),
-        message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING |
-            // vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE |
-            // vk::DebugUtilsMessageSeverityFlagsEXT::INFO |
-            vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+            | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
         message_type: vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
             | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
             | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,

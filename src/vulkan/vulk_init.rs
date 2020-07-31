@@ -1,18 +1,20 @@
-use super::vulk_validation_layers::{setup_debug_utils, VALIDATION};
+use super::vulk_validation_layers::{
+    populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
+};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 use ash::extensions::khr::XlibSurface;
 use ash::version::EntryV1_0;
 use ash::version::InstanceV1_0;
 use ash::vk::{
-    make_version, ApplicationInfo, DebugUtilsMessengerEXT, InstanceCreateFlags, InstanceCreateInfo,
-    StructureType,
+    make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
+    InstanceCreateFlags, InstanceCreateInfo, StructureType,
 };
 use ash::Entry;
 use ash::Instance;
-use log::info;
-use std::ffi::{CString, CStr};
-use std::os::raw::c_char;
+use log::{error, info};
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_void};
 
 pub struct VulkanApiObjects {
     _entry: Entry,
@@ -53,6 +55,8 @@ impl VulkanApiObjects {
             api_version: make_version(1, 2, 148),
         };
 
+        let debug_utils_create_info = populate_debug_messenger_create_info();
+
         let extension_names = vec![
             Surface::name().as_ptr(),
             XlibSurface::name().as_ptr(),
@@ -61,11 +65,19 @@ impl VulkanApiObjects {
 
         let create_info = InstanceCreateInfo {
             s_type: StructureType::INSTANCE_CREATE_INFO,
-            p_next: std::ptr::null(),
+            p_next: if VALIDATION.is_enable {
+                &debug_utils_create_info as *const DebugUtilsMessengerCreateInfoEXT as *const c_void
+            } else {
+                std::ptr::null()
+            },
             flags: InstanceCreateFlags::empty(),
             p_application_info: &app_info,
-            pp_enabled_layer_names: std::ptr::null(),
-            enabled_layer_count: 0,
+            pp_enabled_layer_names: if VALIDATION.is_enable {
+                get_enabled_layers().unwrap().as_ptr()
+            } else {
+                std::ptr::null()
+            },
+            enabled_layer_count: get_enabled_layers_len(),
             pp_enabled_extension_names: extension_names.as_ptr(),
             enabled_extension_count: extension_names.len() as u32,
         };
@@ -78,8 +90,6 @@ impl VulkanApiObjects {
         };
         instance
     }
-
-
 }
 
 impl Drop for VulkanApiObjects {
@@ -95,9 +105,16 @@ fn check_validation_layer_support(entry: &Entry) -> bool {
         .enumerate_instance_layer_properties()
         .expect("Failed to enumerate the Instance Layers Properties!");
 
-    VALIDATION.required_validation_layers.iter()
-        .map(|layers| layer_properties.iter()
-                                      .any(|v| vk_to_string(&v.layer_name) == *layers)).any(|b| b)
+    // info!("{:?}", layer_properties);
+    VALIDATION
+        .required_validation_layers
+        .iter()
+        .map(|layers| {
+            layer_properties
+                .iter()
+                .any(|v| vk_to_string(&v.layer_name) == *layers)
+        })
+        .any(|b| b)
 }
 
 fn vk_to_string(raw_string_array: &[c_char]) -> String {
@@ -110,4 +127,37 @@ fn vk_to_string(raw_string_array: &[c_char]) -> String {
         .to_str()
         .expect("Failed to convert vulkan raw string.")
         .to_owned()
+}
+
+fn p_next_init(
+    debug_utils_create_info: &DebugUtilsMessengerCreateInfoEXT,
+) -> Result<*const c_void, &str> {
+    if VALIDATION.is_enable {
+        Ok(debug_utils_create_info as *const DebugUtilsMessengerCreateInfoEXT as *const c_void)
+    } else {
+        error!("Validation is not enabled");
+        Err("Validation is not enabled")
+    }
+}
+
+fn get_enabled_layers() -> Result<Vec<*const i8>, &'static str> {
+    if VALIDATION.is_enable {
+        Ok(VALIDATION
+            .required_validation_layers
+            .iter()
+            .map(|layer| CString::new(*layer).unwrap())
+            .map(|c_layer| c_layer.as_ptr())
+            .collect())
+    } else {
+        error!("Validation is not enabled");
+        Err("Validation is not enabled")
+    }
+}
+
+fn get_enabled_layers_len() -> u32 {
+    if VALIDATION.is_enable {
+        VALIDATION.required_validation_layers.iter().len() as u32
+    } else {
+        0 as u32
+    }
 }
