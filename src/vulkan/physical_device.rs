@@ -1,4 +1,4 @@
-use super::queues::find_graphical_queue_family;
+use super::queue_family::find_graphical_queue_family;
 use super::utilities::vk_to_string;
 use ash::version::InstanceV1_0;
 use ash::vk::{

@@ -2,7 +2,7 @@ use ash::vk::{QueueFamilyProperties, QueueFlags};
 use log::{info};
 
 pub struct QueueFamily {
-    graphics_family: Option<usize>,
+    pub graphics_family: Option<usize>,
 }
 
 impl QueueFamily {

@@ -1,22 +1,22 @@
+use super::device::create_logical_device;
+use super::physical_device::select_physical_device;
+use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::{
     populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
 };
-use super::physical_device::{select_physical_device};
-use super::utilities::{vk_to_string};
 use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::Surface;
-use ash::extensions::khr::XlibSurface;
-use ash::version::EntryV1_0;
-use ash::version::InstanceV1_0;
+use ash::extensions::khr::{Surface, XlibSurface};
+use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
-    InstanceCreateFlags, InstanceCreateInfo, StructureType, PhysicalDevice
+    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType,
 };
+use ash::Device;
 use ash::Entry;
 use ash::Instance;
-use log::{debug, info};
-use std::ffi::{CString};
-use std::os::raw::{c_void};
+use log::info;
+use std::ffi::CString;
+use std::os::raw::c_void;
 
 pub struct VulkanApiObjects {
     _entry: Entry,
@@ -24,6 +24,8 @@ pub struct VulkanApiObjects {
     debug_utils_loader: DebugUtils,
     debug_messenger: DebugUtilsMessengerEXT,
     _physical_device: PhysicalDevice,
+    device: Device,
+    _graphics_queue: Queue,
 }
 
 impl VulkanApiObjects {
@@ -33,6 +35,7 @@ impl VulkanApiObjects {
         let instance = VulkanApiObjects::create_instance(&entry);
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
         let physical_device = select_physical_device(&instance);
+        let (logical_device, graphics_queue) = create_logical_device(&instance, physical_device);
 
         VulkanApiObjects {
             _entry: entry,
@@ -40,6 +43,8 @@ impl VulkanApiObjects {
             debug_utils_loader,
             debug_messenger,
             _physical_device: physical_device,
+            device: logical_device,
+            _graphics_queue: graphics_queue,
         }
     }
 
@@ -68,19 +73,8 @@ impl VulkanApiObjects {
             DebugUtils::name().as_ptr(),
         ];
 
-        let requred_validation_layer_raw_names: Vec<CString> = VALIDATION
-            .required_validation_layers
-            .iter()
-            .map(|layer_name| CString::new(*layer_name).unwrap())
-            .collect();
-        let enable_layer_names: Vec<*const i8> = requred_validation_layer_raw_names
-            .iter()
-            .map(|layer_name| layer_name.as_ptr())
-            .map(|x| {
-                debug!("Working As Ptr: {:?}", x);
-                x
-            })
-            .collect();
+        let (cstring_vec, enable_layer_names) =
+            conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
 
         let create_info = InstanceCreateInfo {
             s_type: StructureType::INSTANCE_CREATE_INFO,
@@ -114,6 +108,7 @@ impl VulkanApiObjects {
 impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
+            self.device.destroy_device(None);
             if VALIDATION.is_enable {
                 self.debug_utils_loader
                     .destroy_debug_utils_messenger(self.debug_messenger, None);
