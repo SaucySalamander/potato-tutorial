@@ -5,7 +5,6 @@ mod window;
 use window::VulkanWindow;
 use winit::event_loop::EventLoop;
 use vulkan::vulk_init::VulkanApiObjects;
-use log::{info};
 
 fn main() {
     simple_logger::init().unwrap();

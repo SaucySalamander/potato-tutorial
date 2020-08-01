@@ -12,7 +12,7 @@ use ash::vk::{
 };
 use ash::Entry;
 use ash::Instance;
-use log::{error, info};
+use log::{debug, info};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 
@@ -63,6 +63,20 @@ impl VulkanApiObjects {
             DebugUtils::name().as_ptr(),
         ];
 
+        let requred_validation_layer_raw_names: Vec<CString> = VALIDATION
+            .required_validation_layers
+            .iter()
+            .map(|layer_name| CString::new(*layer_name).unwrap())
+            .collect();
+        let enable_layer_names: Vec<*const i8> = requred_validation_layer_raw_names
+            .iter()
+            .map(|layer_name| layer_name.as_ptr())
+            .map(|x| {
+                debug!("Working As Ptr: {:?}", x);
+                x
+            })
+            .collect();
+
         let create_info = InstanceCreateInfo {
             s_type: StructureType::INSTANCE_CREATE_INFO,
             p_next: if VALIDATION.is_enable {
@@ -73,7 +87,7 @@ impl VulkanApiObjects {
             flags: InstanceCreateFlags::empty(),
             p_application_info: &app_info,
             pp_enabled_layer_names: if VALIDATION.is_enable {
-                get_enabled_layers().unwrap().as_ptr()
+                enable_layer_names.as_ptr()
             } else {
                 std::ptr::null()
             },
@@ -95,6 +109,10 @@ impl VulkanApiObjects {
 impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
+            if VALIDATION.is_enable {
+                self.debug_utils_loader
+                    .destroy_debug_utils_messenger(self.debug_messenger, None);
+            }
             self.instance.destroy_instance(None);
         }
     }
@@ -127,31 +145,6 @@ fn vk_to_string(raw_string_array: &[c_char]) -> String {
         .to_str()
         .expect("Failed to convert vulkan raw string.")
         .to_owned()
-}
-
-fn p_next_init(
-    debug_utils_create_info: &DebugUtilsMessengerCreateInfoEXT,
-) -> Result<*const c_void, &str> {
-    if VALIDATION.is_enable {
-        Ok(debug_utils_create_info as *const DebugUtilsMessengerCreateInfoEXT as *const c_void)
-    } else {
-        error!("Validation is not enabled");
-        Err("Validation is not enabled")
-    }
-}
-
-fn get_enabled_layers() -> Result<Vec<*const i8>, &'static str> {
-    if VALIDATION.is_enable {
-        Ok(VALIDATION
-            .required_validation_layers
-            .iter()
-            .map(|layer| CString::new(*layer).unwrap())
-            .map(|c_layer| c_layer.as_ptr())
-            .collect())
-    } else {
-        error!("Validation is not enabled");
-        Err("Validation is not enabled")
-    }
 }
 
 fn get_enabled_layers_len() -> u32 {

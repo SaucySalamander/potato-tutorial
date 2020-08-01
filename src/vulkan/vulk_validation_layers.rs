@@ -70,8 +70,9 @@ pub fn populate_debug_messenger_create_info() -> vk::DebugUtilsMessengerCreateIn
         p_next: std::ptr::null(),
         flags: vk::DebugUtilsMessengerCreateFlagsEXT::empty(),
         message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
-            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
-            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+            // Can uncomment for more verbosity form the validation layers
+            // | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+            // | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
             | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
         message_type: vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
             | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
