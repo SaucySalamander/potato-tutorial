@@ -1,6 +1,8 @@
 use super::vulk_validation_layers::{
     populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
 };
+use super::physical_device::{select_physical_device};
+use super::utilities::{vk_to_string};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 use ash::extensions::khr::XlibSurface;
@@ -8,19 +10,20 @@ use ash::version::EntryV1_0;
 use ash::version::InstanceV1_0;
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
-    InstanceCreateFlags, InstanceCreateInfo, StructureType,
+    InstanceCreateFlags, InstanceCreateInfo, StructureType, PhysicalDevice
 };
 use ash::Entry;
 use ash::Instance;
 use log::{debug, info};
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_void};
+use std::ffi::{CString};
+use std::os::raw::{c_void};
 
 pub struct VulkanApiObjects {
     _entry: Entry,
     instance: Instance,
     debug_utils_loader: DebugUtils,
     debug_messenger: DebugUtilsMessengerEXT,
+    _physical_device: PhysicalDevice,
 }
 
 impl VulkanApiObjects {
@@ -29,12 +32,14 @@ impl VulkanApiObjects {
         let entry = Entry::new().unwrap();
         let instance = VulkanApiObjects::create_instance(&entry);
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
+        let physical_device = select_physical_device(&instance);
 
         VulkanApiObjects {
             _entry: entry,
             instance,
             debug_utils_loader,
             debug_messenger,
+            _physical_device: physical_device,
         }
     }
 
@@ -133,18 +138,6 @@ fn check_validation_layer_support(entry: &Entry) -> bool {
                 .any(|v| vk_to_string(&v.layer_name) == *layers)
         })
         .any(|b| b)
-}
-
-fn vk_to_string(raw_string_array: &[c_char]) -> String {
-    let raw_string = unsafe {
-        let pointer = raw_string_array.as_ptr();
-        CStr::from_ptr(pointer)
-    };
-
-    raw_string
-        .to_str()
-        .expect("Failed to convert vulkan raw string.")
-        .to_owned()
 }
 
 fn get_enabled_layers_len() -> u32 {
