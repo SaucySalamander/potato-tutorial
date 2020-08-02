@@ -1,5 +1,5 @@
 # The Potato Engine
-![Rust](https://github.com/SaucySalamander/potato/workflows/Rust/badge.svg?branch=master&event=status)
+![Rust](https://github.com/SaucySalamander/potato/workflows/Rust/badge.svg?branch=master)
 
 This is a practice project. I am using it to get more familiar with the Rust programing language. 
 
