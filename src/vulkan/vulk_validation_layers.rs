@@ -8,16 +8,7 @@ use ash::{Entry, Instance};
 use log::debug;
 use std::ffi::CStr;
 use std::os::raw::c_void;
-
-pub struct ValidationInfo {
-    pub is_enable: bool,
-    pub required_validation_layers: [&'static str; 1],
-}
-
-pub const VALIDATION: ValidationInfo = ValidationInfo {
-    is_enable: true,
-    required_validation_layers: ["VK_LAYER_KHRONOS_validation"],
-};
+use super::constants::VALIDATION;
 
 unsafe extern "system" fn vulkan_debug_utils_callback(
     message_severity: DebugUtilsMessageSeverityFlagsEXT,
