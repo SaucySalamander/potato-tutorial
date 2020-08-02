@@ -1,24 +1,25 @@
 use super::device::create_logical_device;
 use super::physical_device::select_physical_device;
+use super::surface::create_surface;
+use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::{
     populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
 };
-use super::surface::{create_surface};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{Surface, XlibSurface};
 use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
-    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType, SurfaceKHR
+    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType, SurfaceKHR,
 };
-use winit::window::Window as WinitWindow;
 use ash::Device;
 use ash::Entry;
 use ash::Instance;
 use log::info;
 use std::ffi::CString;
 use std::os::raw::c_void;
+use winit::window::Window as WinitWindow;
 
 pub struct VulkanApiObjects {
     _entry: Entry,
@@ -30,6 +31,7 @@ pub struct VulkanApiObjects {
     _physical_device: PhysicalDevice,
     device: Device,
     _graphics_queue: Queue,
+    swapchain: PotatoSwapChain,
 }
 
 impl VulkanApiObjects {
@@ -40,7 +42,19 @@ impl VulkanApiObjects {
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
         let potato_surface = create_surface(&entry, &instance, window);
         let physical_device = select_physical_device(&instance);
-        let (logical_device, graphics_queue) = create_logical_device(&instance, physical_device);
+        let (logical_device, queue_family) = create_logical_device(&instance, physical_device);
+
+        let swapchain = create_swapchain(
+            &instance,
+            &logical_device,
+            physical_device,
+            &potato_surface,
+            &queue_family,
+        );
+
+        let graphics_queue = unsafe {
+            logical_device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0)
+        };
 
         VulkanApiObjects {
             _entry: entry,
@@ -52,6 +66,7 @@ impl VulkanApiObjects {
             _physical_device: physical_device,
             device: logical_device,
             _graphics_queue: graphics_queue,
+            swapchain,
         }
     }
 

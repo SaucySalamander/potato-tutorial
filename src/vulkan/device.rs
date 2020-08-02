@@ -2,13 +2,13 @@ use ash::Device;
 use ash::Instance;
 use ash::version::InstanceV1_0;
 use ash::version::DeviceV1_0;
-use ash::vk::{PhysicalDevice, Queue, StructureType, DeviceQueueCreateFlags, DeviceQueueCreateInfo, PhysicalDeviceFeatures, DeviceCreateInfo, DeviceCreateFlags};
+use ash::vk::{PhysicalDevice, StructureType, DeviceQueueCreateFlags, DeviceQueueCreateInfo, PhysicalDeviceFeatures, DeviceCreateInfo, DeviceCreateFlags};
 use ash::extensions::khr::Swapchain;
-use super::queue_family::find_graphical_queue_family;
+use super::queue_family::{find_graphical_queue_family, QueueFamily};
 use super::utilities::conver_str_vec_to_c_str_ptr_vec;
 use super::vulk_validation_layers::VALIDATION;
 
-pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice) -> (Device, Queue){
+pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice) -> (Device, QueueFamily){
     let queue_family_properties = unsafe {instance.get_physical_device_queue_family_properties(physical_device)};
     let queue_family = find_graphical_queue_family(&queue_family_properties);
 
@@ -62,5 +62,5 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
         device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0) 
     };
 
-    (device, graphics_queue)
+    (device, queue_family)
 }
