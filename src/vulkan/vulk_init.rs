@@ -116,6 +116,7 @@ impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
             self.device.destroy_device(None);
+            self.surface_loader.destroy_surface(self.surface, None);
             if VALIDATION.is_enable {
                 self.debug_utils_loader
                     .destroy_debug_utils_messenger(self.debug_messenger, None);

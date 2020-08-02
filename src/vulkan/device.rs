@@ -3,6 +3,7 @@ use ash::Instance;
 use ash::version::InstanceV1_0;
 use ash::version::DeviceV1_0;
 use ash::vk::{PhysicalDevice, Queue, StructureType, DeviceQueueCreateFlags, DeviceQueueCreateInfo, PhysicalDeviceFeatures, DeviceCreateInfo, DeviceCreateFlags};
+use ash::extensions::khr::Swapchain;
 use super::queue_family::find_graphical_queue_family;
 use super::utilities::conver_str_vec_to_c_str_ptr_vec;
 use super::vulk_validation_layers::VALIDATION;
@@ -28,6 +29,10 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
 
     let (cstring_vec, enable_layer_names) = conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
 
+    let enable_extension_names = [
+        Swapchain::name().as_ptr(),
+    ];
+
     let device_create_info = DeviceCreateInfo {
         s_type: StructureType::DEVICE_CREATE_INFO,
         p_next: std::ptr::null(),
@@ -44,8 +49,8 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
         } else {
             std::ptr::null()
         },
-        enabled_extension_count: 0,
-        pp_enabled_extension_names: std::ptr::null(),
+        enabled_extension_count: enable_extension_names.len() as u32,
+        pp_enabled_extension_names: enable_extension_names.as_ptr(),
         p_enabled_features: &physical_device_features,
     };
 
