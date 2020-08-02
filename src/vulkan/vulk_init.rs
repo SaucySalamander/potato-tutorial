@@ -1,11 +1,12 @@
 use super::device::create_logical_device;
-use super::physical_device::select_physical_device;
+use super::physical_device::{select_physical_device, describe_device};
 use super::surface::create_surface;
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::{
-    populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
+    populate_debug_messenger_create_info, setup_debug_utils,
 };
+use super::constants::VALIDATION;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{Surface, XlibSurface};
 use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
@@ -41,8 +42,9 @@ impl VulkanApiObjects {
         let instance = VulkanApiObjects::create_instance(&entry);
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
         let potato_surface = create_surface(&entry, &instance, window);
-        let physical_device = select_physical_device(&instance);
-        let (logical_device, queue_family) = create_logical_device(&instance, physical_device);
+        let physical_device = select_physical_device(&instance, &potato_surface);
+        describe_device(&instance, physical_device);
+        let (logical_device, queue_family) = create_logical_device(&instance, physical_device, &potato_surface);
 
         let swapchain = create_swapchain(
             &instance,
@@ -72,7 +74,7 @@ impl VulkanApiObjects {
 
     fn create_instance(entry: &Entry) -> Instance {
         if VALIDATION.is_enable && !check_validation_layer_support(entry) {
-            panic!("Validation layers requested but not supported.");
+            panic!("Validation layers requested but not supported");
         }
 
         let app_name = CString::new("Test").unwrap();

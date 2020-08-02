@@ -6,11 +6,11 @@ use ash::vk::{PhysicalDevice, StructureType, DeviceQueueCreateFlags, DeviceQueue
 use ash::extensions::khr::Swapchain;
 use super::queue_family::{find_graphical_queue_family, QueueFamily};
 use super::utilities::conver_str_vec_to_c_str_ptr_vec;
-use super::vulk_validation_layers::VALIDATION;
+use super::constants::VALIDATION;
+use super::surface::PotatoSurface;
 
-pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice) -> (Device, QueueFamily){
-    let queue_family_properties = unsafe {instance.get_physical_device_queue_family_properties(physical_device)};
-    let queue_family = find_graphical_queue_family(&queue_family_properties);
+pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice, surface: &PotatoSurface) -> (Device, QueueFamily){
+    let queue_family = find_graphical_queue_family(instance, physical_device, surface);
 
     let queue_priorities = [1.0_f32];
 

@@ -1,14 +1,18 @@
 use super::queue_family::find_graphical_queue_family;
+use super::surface::PotatoSurface;
 use super::utilities::vk_to_string;
+use super::constants::DEVICE_EXTENSTIONS;
+use super::swapchain::determine_swapchain_support;
 use ash::version::InstanceV1_0;
 use ash::vk::{
     version_major, version_minor, version_patch, PhysicalDevice, PhysicalDeviceProperties,
     PhysicalDeviceType, QueueFlags,
 };
 use ash::Instance;
-use log::info;
+use log::{info,debug};
+use std::collections::HashSet;
 
-pub fn select_physical_device(instance: &Instance) -> PhysicalDevice {
+pub fn select_physical_device(instance: &Instance, surface: &PotatoSurface) -> PhysicalDevice {
     let physical_devices = unsafe {
         instance
             .enumerate_physical_devices()
@@ -16,19 +20,64 @@ pub fn select_physical_device(instance: &Instance) -> PhysicalDevice {
     };
     info!("{} GPU device(s) found", physical_devices.len());
 
-    let selected_device = physical_devices.iter().find(|x| {
-        let device_queue_familes =
-            unsafe { instance.get_physical_device_queue_family_properties(**x) };
-        let family = find_graphical_queue_family(&device_queue_familes);
-        family.is_complete()
-    });
+    let selected_device = physical_devices
+        .iter()
+        .find(|x| check_device_compatability(instance, **x, surface));
 
-    describe_device(&instance, *selected_device.unwrap());
-    
-    *selected_device.unwrap()
+    debug!("{:?}", selected_device);
+    match selected_device {
+        Some(p_physical_device) => *p_physical_device,
+        None => panic!("Failed to find compatable device")
+    }
 }
 
-fn describe_device(instance: &Instance, physical_device: PhysicalDevice) {
+fn check_device_compatability(
+    instance: &Instance,
+    physical_device: PhysicalDevice,
+    surface: &PotatoSurface,
+) -> bool {
+    let queue_family_support = is_queue_family_supported(instance, physical_device, surface);
+    let device_extension_support = is_device_extension_supported(instance, physical_device);
+    let swapchain_support = is_swapchain_supported(device_extension_support, physical_device, surface);
+
+    debug!("{}, {}, {}", queue_family_support, device_extension_support, swapchain_support);
+    queue_family_support && device_extension_support && swapchain_support
+}
+
+fn is_queue_family_supported(
+    instance: &Instance,
+    physical_device: PhysicalDevice,
+    surface: &PotatoSurface,
+) -> bool {
+    let queue_family = find_graphical_queue_family(instance, physical_device, surface);
+    queue_family.is_complete()
+}
+
+fn is_device_extension_supported(instance: &Instance, physical_device: PhysicalDevice) -> bool {
+    let available_extensions = unsafe {
+        instance
+            .enumerate_device_extension_properties(physical_device)
+            .expect("Failed to get device extension properties")
+    };
+
+    info!("Available Extensions");
+    available_extensions.iter().for_each(|x| info!("Name: {}, Version: {}", vk_to_string(&x.extension_name), x.spec_version));
+
+    let required_extensions: HashSet<String> = DEVICE_EXTENSTIONS.names.iter().map(|x| x.to_string()).collect();
+
+    required_extensions.iter().map(|x| available_extensions.iter().map(|y| vk_to_string(&y.extension_name) == *x).any(|z| z)).any(|a| a)
+}
+
+fn is_swapchain_supported(device_extension_support: bool, physical_device: PhysicalDevice, surface: &PotatoSurface) -> bool{
+    if device_extension_support {
+        let available_support = determine_swapchain_support(physical_device, surface);
+        !available_support.formats.is_empty() && !available_support.present_modes.is_empty()
+    } else {
+        false
+    }
+}
+
+pub fn describe_device(instance: &Instance, physical_device: PhysicalDevice) {
     let device_properties = unsafe { instance.get_physical_device_properties(physical_device) };
     let device_queue_familes =
         unsafe { instance.get_physical_device_queue_family_properties(physical_device) };

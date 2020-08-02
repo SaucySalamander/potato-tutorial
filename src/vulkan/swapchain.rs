@@ -17,9 +17,9 @@ pub struct PotatoSwapChain {
 }
 
 pub struct SwapChainSupportDetail {
-    capabilities: SurfaceCapabilitiesKHR,
-    formats: Vec<SurfaceFormatKHR>,
-    present_modes: Vec<PresentModeKHR>,
+    pub capabilities: SurfaceCapabilitiesKHR,
+    pub formats: Vec<SurfaceFormatKHR>,
+    pub present_modes: Vec<PresentModeKHR>,
 }
 
 pub fn create_swapchain(
@@ -82,7 +82,7 @@ pub fn create_swapchain(
     }
 }
 
-fn determine_swapchain_support(
+pub fn determine_swapchain_support(
     physical_device: PhysicalDevice,
     surface: &PotatoSurface,
 ) -> SwapChainSupportDetail {
