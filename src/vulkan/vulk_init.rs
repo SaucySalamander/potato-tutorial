@@ -4,13 +4,15 @@ use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::{
     populate_debug_messenger_create_info, setup_debug_utils, VALIDATION,
 };
+use super::surface::{create_surface};
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{Surface, XlibSurface};
 use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
-    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType,
+    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType, SurfaceKHR
 };
+use winit::window::Window as WinitWindow;
 use ash::Device;
 use ash::Entry;
 use ash::Instance;
@@ -21,6 +23,8 @@ use std::os::raw::c_void;
 pub struct VulkanApiObjects {
     _entry: Entry,
     instance: Instance,
+    surface_loader: Surface,
+    surface: SurfaceKHR,
     debug_utils_loader: DebugUtils,
     debug_messenger: DebugUtilsMessengerEXT,
     _physical_device: PhysicalDevice,
@@ -29,17 +33,20 @@ pub struct VulkanApiObjects {
 }
 
 impl VulkanApiObjects {
-    pub fn init() -> VulkanApiObjects {
+    pub fn init(window: &WinitWindow) -> VulkanApiObjects {
         info!("Initializing VulkanApiObjects");
         let entry = Entry::new().unwrap();
         let instance = VulkanApiObjects::create_instance(&entry);
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
+        let potato_surface = create_surface(&entry, &instance, window);
         let physical_device = select_physical_device(&instance);
         let (logical_device, graphics_queue) = create_logical_device(&instance, physical_device);
 
         VulkanApiObjects {
             _entry: entry,
             instance,
+            surface_loader: potato_surface.surface_loader,
+            surface: potato_surface.surface,
             debug_utils_loader,
             debug_messenger,
             _physical_device: physical_device,
