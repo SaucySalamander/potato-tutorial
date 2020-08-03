@@ -1,9 +1,12 @@
 use super::queue_family::QueueFamily;
 use super::surface::PotatoSurface;
 use ash::extensions::khr::Swapchain;
+use ash::version::DeviceV1_0;
 use ash::vk::{
-    ColorSpaceKHR, Extent2D, Format, Image, PhysicalDevice, PresentModeKHR, SurfaceCapabilitiesKHR,
-    SurfaceFormatKHR, SwapchainKHR, SharingMode, SwapchainCreateInfoKHR, StructureType, SwapchainCreateFlagsKHR, ImageUsageFlags, CompositeAlphaFlagsKHR, TRUE
+    ColorSpaceKHR, CompositeAlphaFlagsKHR, Extent2D, Format, Image, ImageUsageFlags, ImageView,
+    PhysicalDevice, PresentModeKHR, SharingMode, StructureType, SurfaceCapabilitiesKHR,
+    SurfaceFormatKHR, SwapchainCreateFlagsKHR, SwapchainCreateInfoKHR, SwapchainKHR, TRUE, ImageViewCreateInfo, 
+    ImageViewCreateFlags, ImageViewType, ImageSubresourceRange, ComponentSwizzle, ComponentMapping, ImageAspectFlags
 };
 use ash::{Device, Instance};
 use num::clamp;
@@ -14,6 +17,7 @@ pub struct PotatoSwapChain {
     pub swapchain_images: Vec<Image>,
     pub swapchain_format: Format,
     pub swapchain_extent: Extent2D,
+    pub swapchain_image_views: Vec<ImageView>,
 }
 
 pub struct SwapChainSupportDetail {
@@ -41,7 +45,8 @@ pub fn create_swapchain(
         swapchain_support.capabilities.min_image_count + 1
     };
 
-    let (image_sharing_mode, queue_family_index_count, queue_family_indices) = (SharingMode::EXCLUSIVE, 0, vec![]);
+    let (image_sharing_mode, queue_family_index_count, queue_family_indices) =
+        (SharingMode::EXCLUSIVE, 0, vec![]);
 
     let swapchain_create_info = SwapchainCreateInfoKHR {
         s_type: StructureType::SWAPCHAIN_CREATE_INFO_KHR,
@@ -66,19 +71,26 @@ pub fn create_swapchain(
 
     let swapchain_loader = Swapchain::new(instance, device);
     let swapchain = unsafe {
-        swapchain_loader.create_swapchain(&swapchain_create_info, None).expect("Failed to create swapchain")
+        swapchain_loader
+            .create_swapchain(&swapchain_create_info, None)
+            .expect("Failed to create swapchain")
     };
 
     let swapchain_images = unsafe {
-        swapchain_loader.get_swapchain_images(swapchain).expect("Failed to get swapchain images")
+        swapchain_loader
+            .get_swapchain_images(swapchain)
+            .expect("Failed to get swapchain images")
     };
 
-    PotatoSwapChain{
+    let swapchain_image_views = create_image_views(device, surface_format.format, &swapchain_images);
+
+    PotatoSwapChain {
         swapchain_loader,
         swapchain,
         swapchain_format: surface_format.format,
         swapchain_extent: extent,
         swapchain_images,
+        swapchain_image_views,
     }
 }
 
@@ -141,5 +153,37 @@ fn choose_swapchain_extent(capabilities: &SurfaceCapabilitiesKHR) -> Extent2D {
                 capabilities.max_image_extent.height,
             ),
         }
+    }
+}
+
+fn create_image_views(device: &Device, surface_format: Format, images: &[Image]) -> Vec<ImageView>{
+    images.iter().map(|x| create_image_view(surface_format, *x, device)).collect()
+}
+
+fn create_image_view(surface_format: Format, image: Image, device: &Device) -> ImageView {
+    let image_view_create_info = ImageViewCreateInfo {
+        s_type: StructureType::IMAGE_VIEW_CREATE_INFO,
+        p_next: std::ptr::null(),
+        flags: ImageViewCreateFlags::empty(),
+        view_type: ImageViewType::TYPE_2D,
+        format: surface_format,
+        components: ComponentMapping {
+            r: ComponentSwizzle::IDENTITY,
+            g: ComponentSwizzle::IDENTITY,
+            b: ComponentSwizzle::IDENTITY,
+            a: ComponentSwizzle::IDENTITY,
+        },
+        subresource_range: ImageSubresourceRange {
+            aspect_mask: ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+        },
+        image,
+    };
+
+    unsafe {
+        device.create_image_view(&image_view_create_info, None).expect("Failed to create image view")
     }
 }
