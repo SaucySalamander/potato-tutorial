@@ -74,7 +74,7 @@ impl VulkanApiObjects {
 
     fn create_instance(entry: &Entry) -> Instance {
         if VALIDATION.is_enable && !check_validation_layer_support(entry) {
-            panic!("Validation layers requested but not supported.");
+            panic!("Validation layers requested but not supported");
         }
 
         let app_name = CString::new("Test").unwrap();
@@ -132,6 +132,7 @@ impl VulkanApiObjects {
 impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
+            self.swapchain.swapchain_loader.destroy_swapchain(self.swapchain.swapchain, None);
             self.device.destroy_device(None);
             self.surface_loader.destroy_surface(self.surface, None);
             if VALIDATION.is_enable {
