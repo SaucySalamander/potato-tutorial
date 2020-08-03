@@ -132,6 +132,7 @@ impl VulkanApiObjects {
 impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
+            self.swapchain.swapchain_image_views.iter().for_each(|x| self.device.destroy_image_view(*x, None));
             self.swapchain.swapchain_loader.destroy_swapchain(self.swapchain.swapchain, None);
             self.device.destroy_device(None);
             self.surface_loader.destroy_surface(self.surface, None);
