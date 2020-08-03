@@ -9,11 +9,11 @@ use ash::{Device, Instance};
 use num::clamp;
 
 pub struct PotatoSwapChain {
-    swapchain_loader: Swapchain,
-    swapchain: SwapchainKHR,
-    swapchain_images: Vec<Image>,
-    swapchain_format: Format,
-    swapchain_extent: Extent2D,
+    pub swapchain_loader: Swapchain,
+    pub swapchain: SwapchainKHR,
+    pub swapchain_images: Vec<Image>,
+    pub swapchain_format: Format,
+    pub swapchain_extent: Extent2D,
 }
 
 pub struct SwapChainSupportDetail {
