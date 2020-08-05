@@ -11,8 +11,8 @@ env:
 
 jobs:
   audit:
+    name: audit
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Audit
@@ -21,9 +21,9 @@ jobs:
       run: cargo -v clippy
 
   build:
-
+    name: build
     runs-on: ubuntu-latest
-
+    needs: audit
     steps:
     - uses: actions/checkout@v2
     - name: Build
