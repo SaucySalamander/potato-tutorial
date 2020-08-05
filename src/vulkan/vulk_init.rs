@@ -7,6 +7,7 @@ use super::vulk_validation_layers::{
     populate_debug_messenger_create_info, setup_debug_utils,
 };
 use super::constants::VALIDATION;
+use super::graphics_pipeline::create_graphics_pipeline;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{Surface, XlibSurface};
 use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
@@ -57,6 +58,8 @@ impl VulkanApiObjects {
         let graphics_queue = unsafe {
             logical_device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0)
         };
+
+        let pipeline = create_graphics_pipeline(&logical_device);
 
         VulkanApiObjects {
             _entry: entry,
