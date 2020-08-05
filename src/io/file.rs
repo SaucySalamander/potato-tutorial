@@ -1,6 +1,11 @@
 use std::fs::{File, OpenOptions};
 use std::io::{Result, Read, Write};
 
+pub fn read_file_to_bytes(path: &str) -> Result<Vec<u8>> {
+    let file = File::open(path).unwrap_or_else(|_| panic!("Failed to read spv file {:?}", path));
+    Ok(file.bytes().filter_map(|b| b.ok()).collect())
+}
+
 pub fn read_file_to_str(path: &str) -> Result<String> {
     let mut file = File::open(path)?;
     let mut contents = String::new();
