@@ -29,6 +29,10 @@ impl VulkanWindow {
             .expect("Failed to create window.")
     }
 
+    fn draw_frame(&mut self){
+
+    }
+
     pub fn init_event_loop(mut self, event_loop: EventLoop<()>) {
         event_loop.run(move |event, event_loop, control_flow| {
             *control_flow = ControlFlow::Wait;
@@ -68,6 +72,9 @@ impl VulkanWindow {
                     for (.., window) in self.windows.iter() {
                         window.request_redraw();
                     }
+                },
+                Event::RedrawRequested(_window_id) => {
+                    self.draw_frame();
                 }
                 _ => (),
             }
