@@ -14,6 +14,7 @@ use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, DebugUtilsMessengerEXT,
     InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Queue, StructureType, SurfaceKHR,
+    PipelineLayout
 };
 use ash::Device;
 use ash::Entry;
@@ -34,6 +35,7 @@ pub struct VulkanApiObjects {
     device: Device,
     _graphics_queue: Queue,
     swapchain: PotatoSwapChain,
+    pipeline_layout: PipelineLayout, 
 }
 
 impl VulkanApiObjects {
@@ -59,7 +61,7 @@ impl VulkanApiObjects {
             logical_device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0)
         };
 
-        let pipeline = create_graphics_pipeline(&logical_device);
+        let pipeline_layout = create_graphics_pipeline(&logical_device, swapchain.swapchain_extent);
 
         VulkanApiObjects {
             _entry: entry,
@@ -72,6 +74,7 @@ impl VulkanApiObjects {
             device: logical_device,
             _graphics_queue: graphics_queue,
             swapchain,
+            pipeline_layout,
         }
     }
 
@@ -135,6 +138,7 @@ impl VulkanApiObjects {
 impl Drop for VulkanApiObjects {
     fn drop(&mut self) {
         unsafe {
+            self.device.destroy_pipeline_layout(self.pipeline_layout, None);
             self.swapchain.swapchain_image_views.iter().for_each(|x| self.device.destroy_image_view(*x, None));
             self.swapchain.swapchain_loader.destroy_swapchain(self.swapchain.swapchain, None);
             self.device.destroy_device(None);
