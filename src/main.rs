@@ -1,6 +1,5 @@
 mod io;
 mod vulkan;
-mod window;
 
 use winit::event_loop::EventLoop;
 use vulkan::vulk_init::VulkanApiObjects;
@@ -9,7 +8,9 @@ use log::debug;
 fn main() {
     simple_logger::init_by_env();
     
-    let event_loop = EventLoop::new();      
+    debug!("Init event_loop");
+    let event_loop = EventLoop::new(); 
+    debug!("Init vulkan api objects");
     let vulkan_api_objects = VulkanApiObjects::init(&event_loop);
     debug!("Done with init");
 

@@ -60,8 +60,8 @@ fn is_device_extension_supported(instance: &Instance, physical_device: PhysicalD
             .expect("Failed to get device extension properties")
     };
 
-    info!("Available Extensions");
-    available_extensions.iter().for_each(|x| info!("Name: {}, Version: {}", vk_to_string(&x.extension_name), x.spec_version));
+    debug!("Available Extensions");
+    available_extensions.iter().for_each(|x| debug!("Name: {}, Version: {}", vk_to_string(&x.extension_name), x.spec_version));
 
     let required_extensions: HashSet<String> = DEVICE_EXTENSTIONS.names.iter().map(|x| x.to_string()).collect();
 
@@ -98,8 +98,8 @@ pub fn describe_device(instance: &Instance, physical_device: PhysicalDevice) {
     );
 
     device_queue_familes.iter().for_each(|x| {
-        info!("Queue Count, Graphics, Compute, Transfer, Sparse Binding");
-        info!(
+        debug!("Queue Count, Graphics, Compute, Transfer, Sparse Binding");
+        debug!(
             "{}, {}, {}, {}, {}",
             x.queue_count,
             x.queue_flags.contains(QueueFlags::GRAPHICS),
