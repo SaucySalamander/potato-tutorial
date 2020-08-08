@@ -68,32 +68,25 @@ pub struct VulkanApiObjects {
 
 impl VulkanApiObjects {
     pub fn init(event_loop: &EventLoop<()>) -> VulkanApiObjects {
-        info!("Initializing VulkanApiObjects");
-        debug!("Creating window");
+        debug!("Init window");
         let window = VulkanApiObjects::init_window(&event_loop, "origin");
-        debug!("Finished creating window");
-        debug!("Creating entry");
+        debug!("Init entry");
         let entry = Entry::new().unwrap();
-        debug!("Finished Creating entry");
-        debug!("Creating instance");
+        debug!("Init instance");
         let instance = VulkanApiObjects::create_instance(&entry);
-        debug!("Finished Creating instance");
-        debug!("Creating debug utils");
+        debug!("Init debug utils");
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
-        debug!("Finished Creating instance");
-        debug!("Creating surface");
+        debug!("Init surface");
         let potato_surface = create_surface(&entry, &instance, &window);
-
-        debug!("Creating physical device");
+        debug!("Init physical device");
         let physical_device = select_physical_device(&instance, &potato_surface);
 
         describe_device(&instance, physical_device);
 
-        debug!("Creating logical device");
+        debug!("Init logical device");
         let (logical_device, queue_family) =
             create_logical_device(&instance, physical_device, &potato_surface);
-
-        debug!("Creating swapchain");
+        debug!("Init swapchain");
         let swapchain = create_swapchain(
             &instance,
             &logical_device,
@@ -101,31 +94,25 @@ impl VulkanApiObjects {
             &potato_surface,
             &queue_family,
         );
-
-        debug!("Creating graphics queue");
+        debug!("Init graphics queue");
         let graphics_queue = unsafe {
             logical_device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0)
         };
-
-        debug!("Creating render pass");
+        debug!("Init render pass");
         let render_pass = create_render_pass(&logical_device, swapchain.swapchain_format);
-
-        debug!("Creating graphics pipeline");
+        debug!("Init graphics pipeline");
         let (graphics_pipeline, pipeline_layout) =
             create_graphics_pipeline(&logical_device, render_pass, swapchain.swapchain_extent);
-
-        debug!("Creating framebuffers");            
+        debug!("Init framebuffers");            
         let swapchain_framebuffers = create_framebuffers(
             &logical_device,
             render_pass,
             &swapchain.swapchain_image_views,
             &swapchain.swapchain_extent,
         );
-
-        debug!("Creating command pool");
+        debug!("Init command pool");
         let command_pool = create_command_pool(&logical_device, &queue_family);
-
-        debug!("Creating command buffers");
+        debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
             command_pool,
@@ -134,8 +121,7 @@ impl VulkanApiObjects {
             render_pass,
             swapchain.swapchain_extent,
         );
-
-        debug!("Creating sync objects");
+        debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
 
         let mut windows = HashMap::new();
@@ -399,7 +385,7 @@ fn check_validation_layer_support(entry: &Entry) -> bool {
         .enumerate_instance_layer_properties()
         .expect("Failed to enumerate the Instance Layers Properties!");
 
-    // info!("{:?}", layer_properties);
+    debug!("{:?}", layer_properties);
     VALIDATION
         .required_validation_layers
         .iter()

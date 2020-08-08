@@ -1,37 +1,28 @@
-## Welcome to GitHub Pages
+## Welcome to Documentation on the Potato Engine
 
-You can use the [editor on GitHub](https://github.com/SaucySalamander/potato/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
+This is a project to learn the Vulkan API as well as Rust. This docment is ment to layout and describe the different parts of the engine.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### Vulkan API Objects
 
-### Markdown
+The potato engine interfaces with the Vulkan API via the rust crate [ash](https://github.com/MaikKlein/ash). It uses the [winit](https://github.com/rust-windowing/winit) rust crate for windowing.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+#### Winit
+##### Event Loop
+#### Window
 
-```markdown
-Syntax highlighted code block
+#### Vulkan
+##### Entry
 
-# Header 1
-## Header 2
-### Header 3
+The entry is a structure of the ash crate. It is used to load the vulkan library. You instantiate the entry and use it to create the instance.
 
-- Bulleted
-- List
+#### [Instance](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#initialization-instances)
 
-1. Numbered
-2. List
+The instance contains the application state. You can use the instance to pass the implmentaion information about the application.
 
-**Bold** and _Italic_ and `Code` text
+#### [Validation Layers](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#fundamentals-errors)
 
-[Link](url) and ![Image](src)
-```
+Vulkan does not ship by deafult with debugging capabilities. You need to enable validation layers to aid in development.
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+>One of the core principles of Vulkan is that building and submitting command buffers should be highly efficient. Thus error checking and validation of state in the core layer is minimal, although more rigorous validation can be enabled through the use of layers.
 
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/SaucySalamander/potato/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+#### Surface

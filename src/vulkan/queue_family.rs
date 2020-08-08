@@ -2,7 +2,7 @@ use super::surface::PotatoSurface;
 use ash::version::InstanceV1_0;
 use ash::vk::{PhysicalDevice, QueueFlags};
 use ash::Instance;
-use log::info;
+use log::debug;
 
 pub struct QueueFamily {
     pub graphics_family: Option<usize>,
@@ -26,7 +26,7 @@ pub fn find_graphical_queue_family(
         .iter()
         .position(|x| x.queue_count > 0 && x.queue_flags.contains(QueueFlags::GRAPHICS));
 
-    info!(
+    debug!(
         "Position of graphical queue family {}",
         graphics_family.unwrap()
     );
