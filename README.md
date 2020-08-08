@@ -6,9 +6,11 @@ This is a practice project. I am using it to get more familiar with the Rust pro
 
 ## Current Objective
 
-Create a simple program that can render graphics to the screen.
+Working on understanding and mapping out the setup of the vulkan api.
 
 ## Current progress
+
+I rendered a triangle to the screen!!!!!!
 
 Working through the [ash tutorials](https://github.com/unknownue/vulkan-tutorial-rust). 
 
@@ -23,11 +25,11 @@ Working through the [ash tutorials](https://github.com/unknownue/vulkan-tutorial
 * [X] [08_graphics_pipeline.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/08_graphics_pipeline.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics) 
 * [x] [09_shader_modules.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/09_shader_modules.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Shader_modules) 
 * [x] [10_fixed_functions.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/10_fixed_functions.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Fixed_functions) 
-* [ ] [11_render_passes.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/11_render_passes.rs)   | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Render_passes) 
-* [ ] [12_graphics_pipeline_complete.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/12_graphics_pipeline_complete.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Conclusion) 
-* [ ] [13_framebuffers.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/13_framebuffers.rs)     | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Framebuffers) 
-* [ ] [14_command_buffers.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/14_command_buffers.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers) 
-* [ ] [15_hello_triangle.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/15_hello_triangle.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Rendering_and_presentation) 
+* [x] [11_render_passes.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/11_render_passes.rs)   | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Render_passes) 
+* [x] [12_graphics_pipeline_complete.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/12_graphics_pipeline_complete.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Conclusion) 
+* [x] [13_framebuffers.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/13_framebuffers.rs)     | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Framebuffers) 
+* [x] [14_command_buffers.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/14_command_buffers.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Command_buffers) 
+* [x] [15_hello_triangle.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/15_hello_triangle.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Rendering_and_presentation) 
 * [ ] [16_swap_chain_recreation.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/16_swap_chain_recreation.rs) | [Link](https://vulkan-tutorial.com/Drawing_a_triangle/Swap_chain_recreation) 
 * [ ] [17_vertex_input.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/17_vertex_input.rs)     | [Link](https://vulkan-tutorial.com/Vertex_buffers/Vertex_input_description)
 * [ ] [18_vertex_buffer.rs](https://github.com/unknownue/vulkan-tutorial-rust/blob/master/src/tutorials/18_vertex_buffer.rs)   | [Link](https://vulkan-tutorial.com/Vertex_buffers/Vertex_buffer_creation)
