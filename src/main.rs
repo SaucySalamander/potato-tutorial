@@ -2,21 +2,17 @@ mod io;
 mod vulkan;
 mod window;
 
-use window::VulkanWindow;
 use winit::event_loop::EventLoop;
 use vulkan::vulk_init::VulkanApiObjects;
+use log::debug;
 
 fn main() {
-    simple_logger::init().unwrap();
+    simple_logger::init_by_env();
     
-    let event_loop = EventLoop::new();
-    let vulkan_window = VulkanWindow::init(&event_loop);
-    
-    //TODO temp select one window for surface and swapchain generation
-    let window_map = vulkan_window.windows.iter().next();
-    let window = window_map.unwrap().1;
-    
-    let _vulkan_api_objects = VulkanApiObjects::init(&window);
+    let event_loop = EventLoop::new();      
+    let vulkan_api_objects = VulkanApiObjects::init(&event_loop);
+    debug!("Done with init");
 
-    vulkan_window.init_event_loop(event_loop);
+    debug!("Starting event loop");
+    vulkan_api_objects.init_event_loop(event_loop);
 }

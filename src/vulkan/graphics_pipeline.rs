@@ -11,12 +11,12 @@ use ash::vk::{
     SampleCountFlags,StencilOp, CompareOp, StencilOpState, PipelineDepthStencilStateCreateFlags,
     PipelineDepthStencilStateCreateInfo, BlendOp, BlendFactor, ColorComponentFlags, PipelineColorBlendAttachmentState,
     LogicOp, PipelineColorBlendStateCreateFlags, PipelineColorBlendStateCreateInfo, PipelineLayoutCreateFlags,
-    PipelineLayoutCreateInfo
+    PipelineLayoutCreateInfo, RenderPass, PipelineCreateFlags, GraphicsPipelineCreateInfo, Pipeline, PipelineCache
 };
 use ash::Device;
 use std::ffi::CString;
 
-pub fn create_graphics_pipeline(device: &Device, swapchain_extent: Extent2D) -> PipelineLayout {
+pub fn create_graphics_pipeline(device: &Device, render_pass: RenderPass, swapchain_extent: Extent2D) -> (Pipeline, PipelineLayout) {
     let vert_shader = read_file_to_bytes("src/shaders/spv/shader-vert.spv").unwrap();
     let frag_shader = read_file_to_bytes("src/shaders/spv/shader-frag.spv").unwrap();
 
@@ -69,12 +69,38 @@ pub fn create_graphics_pipeline(device: &Device, swapchain_extent: Extent2D) -> 
         device.create_pipeline_layout(&pipeline_layout_create_info, None).expect("Failed to create pipeline layout")
     };
 
+    let graphics_pipeline_create_infos = [GraphicsPipelineCreateInfo{
+        s_type: StructureType::GRAPHICS_PIPELINE_CREATE_INFO,
+        p_next: std::ptr::null(),
+        flags: PipelineCreateFlags::empty(),
+        stage_count: shader_stages.len() as u32,
+        p_stages: shader_stages.as_ptr(),
+        p_vertex_input_state: &vertex_input_state_create_info,
+        p_input_assembly_state: &vertex_input_assembly_state_info,
+        p_tessellation_state: std::ptr::null(),
+        p_viewport_state: &viewport_state_create_info,
+        p_rasterization_state: &rasterization_state_create_info,
+        p_multisample_state: &multisample_state_create_info,
+        p_depth_stencil_state: &depth_state_create_info,
+        p_color_blend_state: &color_blend_state,
+        p_dynamic_state: std::ptr::null(),
+        layout: pipeline_layout,
+        render_pass,
+        subpass: 0,
+        base_pipeline_handle: Pipeline::null(),
+        base_pipeline_index: -1,
+    }];
+
+    let graphics_pipelines = unsafe {
+        device.create_graphics_pipelines(PipelineCache::null(), &graphics_pipeline_create_infos, None).expect("Failed to create graphics pipelines")
+    };
+
     unsafe {
         device.destroy_shader_module(vert_module, None);
         device.destroy_shader_module(frag_module, None);
     }
 
-    pipeline_layout
+    (graphics_pipelines[0], pipeline_layout)
 }
 
 fn create_shader_module(device: &Device, code: Vec<u8>) -> ShaderModule {

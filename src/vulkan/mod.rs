@@ -9,3 +9,6 @@ mod surface;
 mod swapchain;
 mod constants;
 mod graphics_pipeline;
+mod render_pass;
+mod framebuffers;
+mod command_pool;
