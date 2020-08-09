@@ -27,7 +27,7 @@ pub fn create_command_buffers(
     device: &Device,
     command_pool: CommandPool,
     graphics_pipeline: Pipeline,
-    framebuffers: &Vec<Framebuffer>,
+    framebuffers: &[Framebuffer],
     render_pass: RenderPass,
     surface_extent: Extent2D,
 ) -> Vec<CommandBuffer> {
@@ -64,7 +64,7 @@ fn process_command_buffer(
     index: usize,
     command_buffer: &CommandBuffer,
     render_pass: RenderPass,
-    framebuffers: &Vec<Framebuffer>,
+    framebuffers: &[Framebuffer],
     surface_extent: Extent2D,
     device: &Device,
     graphics_pipeline: Pipeline,

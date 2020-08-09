@@ -8,6 +8,7 @@ use super::queue_family::{find_graphical_queue_family, QueueFamily};
 use super::utilities::conver_str_vec_to_c_str_ptr_vec;
 use super::constants::VALIDATION;
 use super::surface::PotatoSurface;
+use log::debug;
 
 pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice, surface: &PotatoSurface) -> (Device, QueueFamily){
     let queue_family = find_graphical_queue_family(instance, physical_device, surface);
@@ -28,6 +29,7 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
     };
 
     let (cstring_vec, enable_layer_names) = conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
+    debug!("{:?}", cstring_vec);
 
     let enable_extension_names = [
         Swapchain::name().as_ptr(),
@@ -58,7 +60,7 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
         instance.create_device(physical_device, &device_create_info, None).expect("Failed to create logical device")
     };
 
-    let graphics_queue = unsafe {
+    let _graphics_queue = unsafe {
         device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0) 
     };
 
