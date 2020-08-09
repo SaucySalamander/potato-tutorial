@@ -119,17 +119,16 @@ pub fn determine_swapchain_support(
     }
 }
 
-fn choose_swapchain_format(available_foramts: &Vec<SurfaceFormatKHR>) -> SurfaceFormatKHR {
-    available_foramts
+fn choose_swapchain_format(available_foramts: &[SurfaceFormatKHR]) -> SurfaceFormatKHR {
+    *available_foramts
         .iter()
         .find(|x| {
             x.format == Format::B8G8R8A8_SRGB && x.color_space == ColorSpaceKHR::SRGB_NONLINEAR
         })
-        .unwrap_or(available_foramts.first().unwrap())
-        .to_owned()
+        .unwrap_or_else(|| available_foramts.first().unwrap())
 }
 
-fn choose_swapchain_present_mode(available_present_modes: &Vec<PresentModeKHR>) -> PresentModeKHR {
+fn choose_swapchain_present_mode(available_present_modes: &[PresentModeKHR]) -> PresentModeKHR {
     available_present_modes
         .iter()
         .find(|x| **x == PresentModeKHR::MAILBOX)

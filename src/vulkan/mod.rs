@@ -12,3 +12,5 @@ mod graphics_pipeline;
 mod render_pass;
 mod framebuffers;
 mod command_pool;
+mod instance;
+mod sync_objects;

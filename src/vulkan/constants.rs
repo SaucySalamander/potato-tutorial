@@ -15,3 +15,5 @@ pub struct DeviceExtension {
 pub const DEVICE_EXTENSTIONS: DeviceExtension = DeviceExtension {
     names: ["VK_KHR_swapchain"],
 };
+
+pub const MAX_FRAMES_IN_FLIGHT: usize = 2;

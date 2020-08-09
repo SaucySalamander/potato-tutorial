@@ -1,30 +1,27 @@
 use super::command_pool::{create_command_buffers, create_command_pool};
-use super::constants::VALIDATION;
+use super::constants::{VALIDATION, MAX_FRAMES_IN_FLIGHT};
 use super::device::create_logical_device;
 use super::framebuffers::create_framebuffers;
 use super::graphics_pipeline::create_graphics_pipeline;
+use super::instance::create_instance;
 use super::physical_device::{describe_device, select_physical_device};
 use super::render_pass::create_render_pass;
 use super::surface::create_surface;
 use super::swapchain::{create_swapchain, PotatoSwapChain};
-use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
-use super::vulk_validation_layers::{populate_debug_messenger_create_info, setup_debug_utils};
+use super::sync_objects::create_sync_objects;
+use super::vulk_validation_layers::setup_debug_utils;
 use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::{Surface, XlibSurface};
-use ash::version::{DeviceV1_0, EntryV1_0, InstanceV1_0};
+use ash::extensions::khr::Surface;
+use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
-    make_version, ApplicationInfo, CommandBuffer, CommandPool, DebugUtilsMessengerCreateInfoEXT,
-    DebugUtilsMessengerEXT, Fence, FenceCreateFlags, FenceCreateInfo, Framebuffer,
-    InstanceCreateFlags, InstanceCreateInfo, PhysicalDevice, Pipeline, PipelineLayout,
-    PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Semaphore, SemaphoreCreateFlags,
-    SemaphoreCreateInfo, StructureType, SubmitInfo, SurfaceKHR,
+    CommandBuffer, CommandPool, DebugUtilsMessengerEXT, Fence, Framebuffer, PhysicalDevice,
+    Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Semaphore,
+    StructureType, SubmitInfo, SurfaceKHR,
 };
 use ash::Device;
 use ash::Entry;
 use ash::Instance;
-use log::{info,debug};
-use std::ffi::CString;
-use std::os::raw::c_void;
+use log::debug;
 use std::collections::HashMap;
 use winit::{
     dpi::LogicalSize,
@@ -32,15 +29,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder, WindowId},
 };
-
-
-const MAX_FRAMES_IN_FLIGHT: usize = 2;
-
-struct SyncObjects {
-    image_available_semaphores: Vec<Semaphore>,
-    render_finished_semaphores: Vec<Semaphore>,
-    inflight_fences: Vec<Fence>,
-}
 
 pub struct VulkanApiObjects {
     windows: HashMap<WindowId, Window>,
@@ -73,7 +61,7 @@ impl VulkanApiObjects {
         debug!("Init entry");
         let entry = Entry::new().unwrap();
         debug!("Init instance");
-        let instance = VulkanApiObjects::create_instance(&entry);
+        let instance = create_instance(&entry);
         debug!("Init debug utils");
         let (debug_utils_loader, debug_messenger) = setup_debug_utils(&entry, &instance);
         debug!("Init surface");
@@ -103,7 +91,7 @@ impl VulkanApiObjects {
         debug!("Init graphics pipeline");
         let (graphics_pipeline, pipeline_layout) =
             create_graphics_pipeline(&logical_device, render_pass, swapchain.swapchain_extent);
-        debug!("Init framebuffers");            
+        debug!("Init framebuffers");
         let swapchain_framebuffers = create_framebuffers(
             &logical_device,
             render_pass,
@@ -150,63 +138,6 @@ impl VulkanApiObjects {
             in_flight_fences: sync_objects.inflight_fences,
             current_frame: 0,
         }
-    }
-
-    fn create_instance(entry: &Entry) -> Instance {
-        if VALIDATION.is_enable && !check_validation_layer_support(entry) {
-            panic!("Validation layers requested but not supported");
-        }
-
-        let app_name = CString::new("Test").unwrap();
-        let engine_name = CString::new("Potato").unwrap();
-        let app_info = ApplicationInfo {
-            s_type: StructureType::APPLICATION_INFO,
-            p_next: std::ptr::null(),
-            p_application_name: app_name.as_ptr(),
-            application_version: make_version(0, 0, 1),
-            p_engine_name: engine_name.as_ptr(),
-            engine_version: make_version(0, 0, 1),
-            api_version: make_version(1, 2, 148),
-        };
-
-        let debug_utils_create_info = populate_debug_messenger_create_info();
-
-        let extension_names = vec![
-            Surface::name().as_ptr(),
-            XlibSurface::name().as_ptr(),
-            DebugUtils::name().as_ptr(),
-        ];
-
-        let (cstring_vec, enable_layer_names) =
-            conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
-
-        let create_info = InstanceCreateInfo {
-            s_type: StructureType::INSTANCE_CREATE_INFO,
-            p_next: if VALIDATION.is_enable {
-                &debug_utils_create_info as *const DebugUtilsMessengerCreateInfoEXT as *const c_void
-            } else {
-                std::ptr::null()
-            },
-            flags: InstanceCreateFlags::empty(),
-            p_application_info: &app_info,
-            pp_enabled_layer_names: if VALIDATION.is_enable {
-                enable_layer_names.as_ptr()
-            } else {
-                std::ptr::null()
-            },
-            enabled_layer_count: get_enabled_layers_len(),
-            pp_enabled_extension_names: extension_names.as_ptr(),
-            enabled_extension_count: extension_names.len() as u32,
-        };
-
-        info!("Creating Instance with {:?}", create_info);
-        let instance: Instance = unsafe {
-            entry
-                .create_instance(&create_info, None)
-                .expect("Failed to create instance")
-        };
-        debug!("Finished creating instance");
-        instance
     }
 
     pub fn draw(&mut self) {
@@ -329,13 +260,15 @@ impl VulkanApiObjects {
                     for (.., window) in self.windows.iter() {
                         window.request_redraw();
                     }
-                },
+                }
                 Event::RedrawRequested(_window_id) => {
                     self.draw();
-                },
+                }
                 Event::LoopDestroyed => {
                     unsafe {
-                        self.device.device_wait_idle().expect("Failed to wait device idle!")
+                        self.device
+                            .device_wait_idle()
+                            .expect("Failed to wait device idle!")
                     };
                 }
                 _ => (),
@@ -378,74 +311,4 @@ impl Drop for VulkanApiObjects {
             self.instance.destroy_instance(None);
         }
     }
-}
-
-fn check_validation_layer_support(entry: &Entry) -> bool {
-    let layer_properties = entry
-        .enumerate_instance_layer_properties()
-        .expect("Failed to enumerate the Instance Layers Properties!");
-
-    debug!("{:?}", layer_properties);
-    VALIDATION
-        .required_validation_layers
-        .iter()
-        .map(|layers| {
-            layer_properties
-                .iter()
-                .any(|v| vk_to_string(&v.layer_name) == *layers)
-        })
-        .any(|b| b)
-}
-
-fn get_enabled_layers_len() -> u32 {
-    if VALIDATION.is_enable {
-        VALIDATION.required_validation_layers.iter().len() as u32
-    } else {
-        0 as u32
-    }
-}
-
-//TODO look to refactor
-fn create_sync_objects(device: &Device) -> SyncObjects {
-    let mut sync_objects = SyncObjects {
-        image_available_semaphores: vec![],
-        render_finished_semaphores: vec![],
-        inflight_fences: vec![],
-    };
-
-    let semaphore_create_info = SemaphoreCreateInfo {
-        s_type: StructureType::SEMAPHORE_CREATE_INFO,
-        p_next: std::ptr::null(),
-        flags: SemaphoreCreateFlags::empty(),
-    };
-
-    let fence_create_info = FenceCreateInfo {
-        s_type: StructureType::FENCE_CREATE_INFO,
-        p_next: std::ptr::null(),
-        flags: FenceCreateFlags::SIGNALED,
-    };
-
-    for _ in 0..MAX_FRAMES_IN_FLIGHT {
-        unsafe {
-            let image_available_semaphore = device
-                .create_semaphore(&semaphore_create_info, None)
-                .expect("Failed to create Semaphore Object!");
-            let render_finished_semaphore = device
-                .create_semaphore(&semaphore_create_info, None)
-                .expect("Failed to create Semaphore Object!");
-            let inflight_fence = device
-                .create_fence(&fence_create_info, None)
-                .expect("Failed to create Fence Object!");
-
-            sync_objects
-                .image_available_semaphores
-                .push(image_available_semaphore);
-            sync_objects
-                .render_finished_semaphores
-                .push(render_finished_semaphore);
-            sync_objects.inflight_fences.push(inflight_fence);
-        }
-    }
-
-    sync_objects
 }
