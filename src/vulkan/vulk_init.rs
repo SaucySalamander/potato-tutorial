@@ -10,6 +10,7 @@ use super::surface::create_surface;
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
 use super::vulk_validation_layers::setup_debug_utils;
+use super::vertex::create_vertex_buffer;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::Surface;
 use ash::version::{DeviceV1_0, InstanceV1_0};
@@ -100,6 +101,8 @@ impl VulkanApiObjects {
         );
         debug!("Init command pool");
         let command_pool = create_command_pool(&logical_device, &queue_family);
+        debug!("Init vertex buffer");
+        let (vertex_buffer, vertex_buffer_memory) = create_vertex_buffer(&instance, &logical_device, physical_device);
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -108,6 +111,7 @@ impl VulkanApiObjects {
             &swapchain_framebuffers,
             render_pass,
             swapchain.swapchain_extent,
+            vertex_buffer
         );
         debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
