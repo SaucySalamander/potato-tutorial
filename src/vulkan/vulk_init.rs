@@ -17,7 +17,7 @@ use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
     CommandBuffer, CommandPool, DebugUtilsMessengerEXT, Fence, Framebuffer, PhysicalDevice,
     Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Semaphore,
-    StructureType, SubmitInfo, Result, Buffer,
+    StructureType, SubmitInfo, Result, Buffer, DeviceMemory
 };
 use ash::Device;
 use ash::Entry;
@@ -54,6 +54,7 @@ pub struct VulkanApiObjects {
     in_flight_fences: Vec<Fence>,
     current_frame: usize,
     vertex_buffer: Buffer,
+    vertex_buffer_memory: DeviceMemory,
 }
 
 impl VulkanApiObjects {
@@ -142,7 +143,8 @@ impl VulkanApiObjects {
             render_finished_semaphores: sync_objects.render_finished_semaphores,
             in_flight_fences: sync_objects.inflight_fences,
             current_frame: 0,
-            vertex_buffer
+            vertex_buffer,
+            vertex_buffer_memory
         }
     }
 
@@ -371,6 +373,8 @@ impl Drop for VulkanApiObjects {
                 self.device.destroy_fence(self.in_flight_fences[i], None);
             }
             self.cleanup_swapchain();
+            self.device.destroy_buffer(self.vertex_buffer, None);
+            self.device.free_memory(self.vertex_buffer_memory, None);
             self.device.destroy_command_pool(self.command_pool, None);
             self.device.destroy_device(None);
             self.surface

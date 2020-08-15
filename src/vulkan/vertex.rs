@@ -38,7 +38,7 @@ impl Vertex {
             VertexInputAttributeDescription {
                 location: 1,
                 binding: 0,
-                format: Format::R32G32_SFLOAT,
+                format: Format::R32G32B32_SFLOAT,
                 offset: offset_of!(Self, color) as u32,
             },
         ]
