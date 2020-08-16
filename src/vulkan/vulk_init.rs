@@ -1,22 +1,23 @@
 use super::command_pool::{create_command_buffers, create_command_pool};
-use super::constants::{VALIDATION, MAX_FRAMES_IN_FLIGHT};
+use super::constants::{MAX_FRAMES_IN_FLIGHT, VALIDATION};
 use super::device::create_logical_device;
 use super::framebuffers::create_framebuffers;
 use super::graphics_pipeline::create_graphics_pipeline;
 use super::instance::create_instance;
 use super::physical_device::{describe_device, select_physical_device};
+use super::queue_family::QueueFamily;
 use super::render_pass::create_render_pass;
-use super::surface::create_surface;
+use super::surface::{create_surface, PotatoSurface};
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
 use super::vulk_validation_layers::setup_debug_utils;
+use super::vertex::create_vertex_buffer;
 use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::Surface;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
     CommandBuffer, CommandPool, DebugUtilsMessengerEXT, Fence, Framebuffer, PhysicalDevice,
     Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Semaphore,
-    StructureType, SubmitInfo, SurfaceKHR,
+    StructureType, SubmitInfo, Result, Buffer, DeviceMemory
 };
 use ash::Device;
 use ash::Entry;
@@ -34,11 +35,11 @@ pub struct VulkanApiObjects {
     windows: HashMap<WindowId, Window>,
     _entry: Entry,
     instance: Instance,
-    surface_loader: Surface,
-    surface: SurfaceKHR,
+    surface: PotatoSurface,
+    queue_family: QueueFamily,
     debug_utils_loader: DebugUtils,
     debug_messenger: DebugUtilsMessengerEXT,
-    _physical_device: PhysicalDevice,
+    physical_device: PhysicalDevice,
     device: Device,
     graphics_queue: Queue,
     swapchain: PotatoSwapChain,
@@ -52,6 +53,8 @@ pub struct VulkanApiObjects {
     render_finished_semaphores: Vec<Semaphore>,
     in_flight_fences: Vec<Fence>,
     current_frame: usize,
+    vertex_buffer: Buffer,
+    vertex_buffer_memory: DeviceMemory,
 }
 
 impl VulkanApiObjects {
@@ -100,6 +103,8 @@ impl VulkanApiObjects {
         );
         debug!("Init command pool");
         let command_pool = create_command_pool(&logical_device, &queue_family);
+        debug!("Init vertex buffer");
+        let (vertex_buffer, vertex_buffer_memory) = create_vertex_buffer(&instance, &logical_device, physical_device);
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -108,6 +113,7 @@ impl VulkanApiObjects {
             &swapchain_framebuffers,
             render_pass,
             swapchain.swapchain_extent,
+            vertex_buffer
         );
         debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
@@ -119,11 +125,11 @@ impl VulkanApiObjects {
             windows,
             _entry: entry,
             instance,
-            surface_loader: potato_surface.surface_loader,
-            surface: potato_surface.surface,
+            surface: potato_surface,
+            queue_family,
             debug_utils_loader,
             debug_messenger,
-            _physical_device: physical_device,
+            physical_device,
             device: logical_device,
             graphics_queue,
             swapchain,
@@ -137,26 +143,36 @@ impl VulkanApiObjects {
             render_finished_semaphores: sync_objects.render_finished_semaphores,
             in_flight_fences: sync_objects.inflight_fences,
             current_frame: 0,
+            vertex_buffer,
+            vertex_buffer_memory
         }
     }
 
     pub fn draw(&mut self) {
-        debug!("start draw");
         let wait_fences = [self.in_flight_fences[self.current_frame]];
         let (image_index, _is_sub_optimal) = unsafe {
             self.device
                 .wait_for_fences(&wait_fences, true, std::u64::MAX)
                 .expect("Failed to wait for Fence!");
 
-            self.swapchain
+            let result = self.swapchain
                 .swapchain_loader
                 .acquire_next_image(
                     self.swapchain.swapchain,
                     std::u64::MAX,
                     self.image_available_semaphores[self.current_frame],
                     Fence::null(),
-                )
-                .expect("Failed to acquire next image.")
+                );
+            match result {
+                Ok(image_index) => image_index,
+                Err(vk_result) => match vk_result{
+                    Result::ERROR_OUT_OF_DATE_KHR => {
+                        self.recreate_swapchain();
+                        return;
+                    }
+                    _ => panic!("Failed to acquire swap chain image"),
+                },
+            }
         };
 
         let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
@@ -174,7 +190,6 @@ impl VulkanApiObjects {
             signal_semaphore_count: signal_semaphores.len() as u32,
             p_signal_semaphores: signal_semaphores.as_ptr(),
         }];
-        debug!("middle draw");
         unsafe {
             self.device
                 .reset_fences(&wait_fences)
@@ -202,15 +217,85 @@ impl VulkanApiObjects {
             p_results: std::ptr::null_mut(),
         };
 
-        unsafe {
+        let result = unsafe {
             self.swapchain
                 .swapchain_loader
                 .queue_present(self.graphics_queue, &present_info)
-                .expect("Failed to execute queue present.");
+        };
+
+        let is_resized = match result {
+            Ok(_) => false,
+            Err(vk_result) => match vk_result {
+                Result::ERROR_OUT_OF_DATE_KHR | Result::SUBOPTIMAL_KHR => true,
+                _ => panic!("Failed to execute queue present"),
+            },
+        };
+
+        if is_resized {
+            self.recreate_swapchain();
         }
 
         self.current_frame = (self.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-        debug!("finish draw");
+    }
+
+    fn recreate_swapchain(&mut self) {
+        unsafe {
+            self.device
+                .device_wait_idle()
+                .expect("Failed to wait on device")
+        };
+        self.cleanup_swapchain();
+
+        self.swapchain = create_swapchain(
+            &self.instance,
+            &self.device,
+            self.physical_device,
+            &self.surface,
+            &self.queue_family,
+        );
+        self.render_pass = create_render_pass(&self.device, self.swapchain.swapchain_format);
+        let (graphics_pipeline, pipeline_layout) = create_graphics_pipeline(
+            &self.device,
+            self.render_pass,
+            self.swapchain.swapchain_extent,
+        );
+        self.graphics_pipeline = graphics_pipeline;
+        self.pipeline_layout = pipeline_layout;
+        self.swapchain_framebuffers = create_framebuffers(
+            &self.device,
+            self.render_pass,
+            &self.swapchain.swapchain_image_views,
+            &self.swapchain.swapchain_extent,
+        );
+        self.command_buffers = create_command_buffers(
+            &self.device,
+            self.command_pool,
+            graphics_pipeline,
+            &self.swapchain_framebuffers,
+            self.render_pass,
+            self.swapchain.swapchain_extent,
+            self.vertex_buffer,
+        );
+    }
+
+    fn cleanup_swapchain(&self) {
+        unsafe {
+            self.device.free_command_buffers(self.command_pool, &self.command_buffers);
+            self.swapchain_framebuffers
+                .iter()
+                .for_each(|x| self.device.destroy_framebuffer(*x, None));
+            self.device.destroy_pipeline(self.graphics_pipeline, None);
+            self.device
+                .destroy_pipeline_layout(self.pipeline_layout, None);
+            self.device.destroy_render_pass(self.render_pass, None);
+            self.swapchain
+                .swapchain_image_views
+                .iter()
+                .for_each(|x| self.device.destroy_image_view(*x, None));
+            self.swapchain
+                .swapchain_loader
+                .destroy_swapchain(self.swapchain.swapchain, None);
+        }
     }
 
     fn init_window(event_loop: &EventLoopWindowTarget<()>, name: &str) -> Window {
@@ -287,23 +372,14 @@ impl Drop for VulkanApiObjects {
                     .destroy_semaphore(self.render_finished_semaphores[i], None);
                 self.device.destroy_fence(self.in_flight_fences[i], None);
             }
+            self.cleanup_swapchain();
+            self.device.destroy_buffer(self.vertex_buffer, None);
+            self.device.free_memory(self.vertex_buffer_memory, None);
             self.device.destroy_command_pool(self.command_pool, None);
-            self.swapchain_framebuffers
-                .iter()
-                .for_each(|x| self.device.destroy_framebuffer(*x, None));
-            self.device.destroy_pipeline(self.graphics_pipeline, None);
-            self.device
-                .destroy_pipeline_layout(self.pipeline_layout, None);
-            self.device.destroy_render_pass(self.render_pass, None);
-            self.swapchain
-                .swapchain_image_views
-                .iter()
-                .for_each(|x| self.device.destroy_image_view(*x, None));
-            self.swapchain
-                .swapchain_loader
-                .destroy_swapchain(self.swapchain.swapchain, None);
             self.device.destroy_device(None);
-            self.surface_loader.destroy_surface(self.surface, None);
+            self.surface
+                .surface_loader
+                .destroy_surface(self.surface.surface, None);
             if VALIDATION.is_enable {
                 self.debug_utils_loader
                     .destroy_debug_utils_messenger(self.debug_messenger, None);

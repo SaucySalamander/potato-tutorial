@@ -1,6 +1,6 @@
 use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::populate_debug_messenger_create_info;
-use ash::extensions::khr::{Surface, XlibSurface};
+use ash::extensions::khr::{Surface, XlibSurface, WaylandSurface};
 use ash::extensions::ext::DebugUtils;
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, InstanceCreateFlags,
@@ -33,11 +33,7 @@ pub fn create_instance(entry: &Entry) -> Instance {
 
     let debug_utils_create_info = populate_debug_messenger_create_info();
 
-    let extension_names = vec![
-        Surface::name().as_ptr(),
-        XlibSurface::name().as_ptr(),
-        DebugUtils::name().as_ptr(),
-    ];
+    let extension_names = create_extention_names();
 
     let (cstring_vec, enable_layer_names) =
         conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
@@ -95,4 +91,22 @@ fn get_enabled_layers_len() -> u32 {
     } else {
         0 as u32
     }
+}
+
+#[cfg(feature = "wayland")]
+fn create_extention_names() -> Vec<*const i8> {
+    vec![
+        Surface::name().as_ptr(),
+        DebugUtils::name().as_ptr(),
+        WaylandSurface::name().as_ptr(),
+    ]
+}
+
+#[cfg(feature = "xlib")]
+fn create_extention_names() -> Vec<*const i8> {
+    vec![
+        Surface::name().as_ptr(),
+        XlibSurface::name().as_ptr(),
+        DebugUtils::name().as_ptr(),
+    ]
 }

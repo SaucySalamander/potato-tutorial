@@ -4,7 +4,7 @@ use ash::vk::{
     ClearColorValue, ClearValue, CommandBuffer, CommandBufferAllocateInfo, CommandBufferLevel,
     CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, Extent2D, Framebuffer, Offset2D,
     Pipeline, PipelineBindPoint, Rect2D, RenderPass, RenderPassBeginInfo, StructureType,
-    SubpassContents, CommandBufferUsageFlags, CommandBufferBeginInfo
+    SubpassContents, CommandBufferUsageFlags, CommandBufferBeginInfo, Buffer
 };
 use ash::Device;
 
@@ -30,6 +30,7 @@ pub fn create_command_buffers(
     framebuffers: &[Framebuffer],
     render_pass: RenderPass,
     surface_extent: Extent2D,
+    vertex_buffer: Buffer,
 ) -> Vec<CommandBuffer> {
     let command_buffer_allocate_info = CommandBufferAllocateInfo {
         s_type: StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
@@ -54,6 +55,7 @@ pub fn create_command_buffers(
             surface_extent,
             device,
             graphics_pipeline,
+            vertex_buffer
         )
     });
 
@@ -68,6 +70,7 @@ fn process_command_buffer(
     surface_extent: Extent2D,
     device: &Device,
     graphics_pipeline: Pipeline,
+    vertex_buffer: Buffer,
 ) {
     let command_buffer_begin_info = CommandBufferBeginInfo {
         s_type: StructureType::COMMAND_BUFFER_BEGIN_INFO,
@@ -112,6 +115,9 @@ fn process_command_buffer(
             PipelineBindPoint::GRAPHICS,
             graphics_pipeline,
         );
+        let vertex_buffers = [vertex_buffer];
+        let offsets = [0_u64];
+        device.cmd_bind_vertex_buffers(*command_buffer, 0, &vertex_buffers, &offsets);
         device.cmd_draw(*command_buffer, 3, 1, 0, 0);
         device.cmd_end_render_pass(*command_buffer);
         device

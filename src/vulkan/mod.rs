@@ -14,3 +14,4 @@ mod framebuffers;
 mod command_pool;
 mod instance;
 mod sync_objects;
+mod vertex;
