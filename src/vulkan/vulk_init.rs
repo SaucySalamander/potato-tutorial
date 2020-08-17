@@ -10,14 +10,14 @@ use super::render_pass::create_render_pass;
 use super::surface::{create_surface, PotatoSurface};
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
-use super::vulk_validation_layers::setup_debug_utils;
 use super::vertex::create_vertex_buffer;
+use super::vulk_validation_layers::setup_debug_utils;
 use ash::extensions::ext::DebugUtils;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
-    CommandBuffer, CommandPool, DebugUtilsMessengerEXT, Fence, Framebuffer, PhysicalDevice,
-    Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Semaphore,
-    StructureType, SubmitInfo, Result, Buffer, DeviceMemory
+    Buffer, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DeviceMemory, Fence, Framebuffer,
+    PhysicalDevice, Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue,
+    RenderPass, Result, Semaphore, StructureType, SubmitInfo,
 };
 use ash::Device;
 use ash::Entry;
@@ -104,7 +104,8 @@ impl VulkanApiObjects {
         debug!("Init command pool");
         let command_pool = create_command_pool(&logical_device, &queue_family);
         debug!("Init vertex buffer");
-        let (vertex_buffer, vertex_buffer_memory) = create_vertex_buffer(&instance, &logical_device, physical_device);
+        let (vertex_buffer, vertex_buffer_memory) =
+            create_vertex_buffer(&instance, &logical_device, physical_device, command_pool, graphics_queue);
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -113,7 +114,7 @@ impl VulkanApiObjects {
             &swapchain_framebuffers,
             render_pass,
             swapchain.swapchain_extent,
-            vertex_buffer
+            vertex_buffer,
         );
         debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
@@ -144,7 +145,7 @@ impl VulkanApiObjects {
             in_flight_fences: sync_objects.inflight_fences,
             current_frame: 0,
             vertex_buffer,
-            vertex_buffer_memory
+            vertex_buffer_memory,
         }
     }
 
@@ -155,17 +156,15 @@ impl VulkanApiObjects {
                 .wait_for_fences(&wait_fences, true, std::u64::MAX)
                 .expect("Failed to wait for Fence!");
 
-            let result = self.swapchain
-                .swapchain_loader
-                .acquire_next_image(
-                    self.swapchain.swapchain,
-                    std::u64::MAX,
-                    self.image_available_semaphores[self.current_frame],
-                    Fence::null(),
-                );
+            let result = self.swapchain.swapchain_loader.acquire_next_image(
+                self.swapchain.swapchain,
+                std::u64::MAX,
+                self.image_available_semaphores[self.current_frame],
+                Fence::null(),
+            );
             match result {
                 Ok(image_index) => image_index,
-                Err(vk_result) => match vk_result{
+                Err(vk_result) => match vk_result {
                     Result::ERROR_OUT_OF_DATE_KHR => {
                         self.recreate_swapchain();
                         return;
@@ -280,7 +279,8 @@ impl VulkanApiObjects {
 
     fn cleanup_swapchain(&self) {
         unsafe {
-            self.device.free_command_buffers(self.command_pool, &self.command_buffers);
+            self.device
+                .free_command_buffers(self.command_pool, &self.command_buffers);
             self.swapchain_framebuffers
                 .iter()
                 .for_each(|x| self.device.destroy_framebuffer(*x, None));
