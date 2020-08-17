@@ -12,6 +12,7 @@ use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
 use super::vertex::create_vertex_buffer;
 use super::vulk_validation_layers::setup_debug_utils;
+use super::vertex::create_vertex_buffer;
 use ash::extensions::ext::DebugUtils;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
