@@ -62,6 +62,7 @@ pub fn create_command_buffers(
     command_buffers
 }
 
+//TODO Reduce number of arguments
 fn process_command_buffer(
     index: usize,
     command_buffer: &CommandBuffer,

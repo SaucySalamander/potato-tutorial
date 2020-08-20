@@ -1,7 +1,10 @@
 use ash::extensions::khr::Surface;
+#[cfg(feature = "xlib")]
 use ash::extensions::khr::XlibSurface;
 use ash::extensions::khr::WaylandSurface;
-use ash::vk::{Display, StructureType, SurfaceKHR, Window, XlibSurfaceCreateInfoKHR, WaylandSurfaceCreateInfoKHR};
+#[cfg(feature = "xlib")]
+use ash::vk::{Window, Display, XlibSurfaceCreateInfoKHR};
+use ash::vk::{StructureType, SurfaceKHR, WaylandSurfaceCreateInfoKHR};
 use ash::{Entry, Instance};
 use winit::platform::unix::WindowExtUnix;
 use winit::window::Window as WinitWindow;

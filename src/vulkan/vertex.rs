@@ -3,10 +3,9 @@ use super::constants::VERTICES_DATA;
 use ash::version::DeviceV1_0;
 use ash::version::InstanceV1_0;
 use ash::vk::{
-    Buffer, BufferCreateFlags, BufferCreateInfo, BufferUsageFlags, CommandPool, DeviceMemory,
-    DeviceSize, Format, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDevice,
-    PhysicalDeviceMemoryProperties, Queue, SharingMode, StructureType,
-    VertexInputAttributeDescription, VertexInputBindingDescription, VertexInputRate,
+    Buffer, BufferUsageFlags, CommandPool, DeviceMemory, DeviceSize, Format, MemoryMapFlags,
+    MemoryPropertyFlags, PhysicalDevice, Queue, VertexInputAttributeDescription,
+    VertexInputBindingDescription, VertexInputRate,
 };
 use ash::Device;
 use ash::Instance;
