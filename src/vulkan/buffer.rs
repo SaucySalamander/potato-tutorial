@@ -1,9 +1,9 @@
 use ash::version::DeviceV1_0;
 use ash::vk::{
-    Buffer, BufferCreateFlags, BufferCreateInfo, BufferUsageFlags, CommandBufferAllocateInfo,
-    CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags, CommandPool, DeviceMemory,
-    DeviceSize, MemoryAllocateInfo, MemoryPropertyFlags, PhysicalDeviceMemoryProperties, Queue,
-    SharingMode, StructureType, SubmitInfo, Fence, BufferCopy
+    Buffer, BufferCopy, BufferCreateFlags, BufferCreateInfo, BufferUsageFlags,
+    CommandBufferAllocateInfo, CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags,
+    CommandPool, DeviceMemory, DeviceSize, Fence, MemoryAllocateInfo, MemoryPropertyFlags,
+    PhysicalDeviceMemoryProperties, Queue, SharingMode, StructureType, SubmitInfo,
 };
 use ash::Device;
 
