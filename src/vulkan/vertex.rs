@@ -101,8 +101,22 @@ pub fn create_vertex_buffer(
         device.free_memory(staging_buffer_memory, None);
     }
 
-    (vertex_buffer, vertex_buffer_memory)
-}
+    let (vertex_buffer, vertex_buffer_memory) = create_buffer(
+        device,
+        buffer_size,
+        BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::VERTEX_BUFFER,
+        MemoryPropertyFlags::DEVICE_LOCAL,
+        &device_memory_properties,
+    );
+
+    copy_buffer(
+        device,
+        submit_queue,
+        command_pool,
+        staging_buffer,
+        vertex_buffer,
+        buffer_size,
+    );
 
 pub fn create_index_buffer(
     instance: &Instance,
@@ -154,7 +168,6 @@ pub fn create_index_buffer(
         vertex_buffer,
         buffer_size,
     );
-
     unsafe {
         device.destroy_buffer(staging_buffer, None);
         device.free_memory(staging_buffer_memory, None);
