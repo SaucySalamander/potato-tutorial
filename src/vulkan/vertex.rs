@@ -1,12 +1,11 @@
 use super::buffer::{copy_buffer, create_buffer};
-use super::constants::VERTICES_DATA;
+use super::constants::{VERTICES_DATA,INDICES_DATA};
 use ash::version::DeviceV1_0;
 use ash::version::InstanceV1_0;
 use ash::vk::{
-    Buffer, BufferCreateFlags, BufferCreateInfo, BufferUsageFlags, CommandPool, DeviceMemory,
-    DeviceSize, Format, MemoryAllocateInfo, MemoryMapFlags, MemoryPropertyFlags, PhysicalDevice,
-    PhysicalDeviceMemoryProperties, Queue, SharingMode, StructureType,
-    VertexInputAttributeDescription, VertexInputBindingDescription, VertexInputRate,
+    Buffer, BufferUsageFlags, CommandPool, DeviceMemory, DeviceSize, Format, MemoryMapFlags,
+    MemoryPropertyFlags, PhysicalDevice, Queue, VertexInputAttributeDescription,
+    VertexInputBindingDescription, VertexInputRate,
 };
 use ash::Device;
 use ash::Instance;
@@ -52,6 +51,7 @@ pub fn create_vertex_buffer(
     physical_device: PhysicalDevice,
     command_pool: CommandPool,
     submit_queue: Queue,
+    buffer_usage_flags: BufferUsageFlags,
 ) -> (Buffer, DeviceMemory) {
     let buffer_size = std::mem::size_of_val(&VERTICES_DATA) as DeviceSize;
     let device_memory_properties =
@@ -82,7 +82,7 @@ pub fn create_vertex_buffer(
     let (vertex_buffer, vertex_buffer_memory) = create_buffer(
         device,
         buffer_size,
-        BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::VERTEX_BUFFER,
+        buffer_usage_flags,
         MemoryPropertyFlags::DEVICE_LOCAL,
         &device_memory_properties,
     );
@@ -96,6 +96,64 @@ pub fn create_vertex_buffer(
         buffer_size,
     );
 
+    unsafe {
+        device.destroy_buffer(staging_buffer, None);
+        device.free_memory(staging_buffer_memory, None);
+    }
+
+    (vertex_buffer, vertex_buffer_memory)
+}
+
+pub fn create_index_buffer(
+    instance: &Instance,
+    device: &Device,
+    physical_device: PhysicalDevice,
+    command_pool: CommandPool,
+    submit_queue: Queue,
+    buffer_usage_flags: BufferUsageFlags,
+) -> (Buffer, DeviceMemory) {
+    let buffer_size = std::mem::size_of_val(&INDICES_DATA) as DeviceSize;
+    let device_memory_properties =
+        unsafe { instance.get_physical_device_memory_properties(physical_device) };
+
+    let (staging_buffer, staging_buffer_memory) = create_buffer(
+        device,
+        buffer_size,
+        BufferUsageFlags::TRANSFER_SRC,
+        MemoryPropertyFlags::HOST_VISIBLE | MemoryPropertyFlags::HOST_COHERENT,
+        &device_memory_properties,
+    );
+    unsafe {
+        let data_ptr = device
+            .map_memory(
+                staging_buffer_memory,
+                0,
+                buffer_size,
+                MemoryMapFlags::empty(),
+            )
+            .expect("Failed to map memory") as *mut u32;
+
+        data_ptr.copy_from_nonoverlapping(INDICES_DATA.as_ptr(), INDICES_DATA.len());
+
+        device.unmap_memory(staging_buffer_memory);
+    }
+
+    let (vertex_buffer, vertex_buffer_memory) = create_buffer(
+        device,
+        buffer_size,
+        buffer_usage_flags,
+        MemoryPropertyFlags::DEVICE_LOCAL,
+        &device_memory_properties,
+    );
+
+    copy_buffer(
+        device,
+        submit_queue,
+        command_pool,
+        staging_buffer,
+        vertex_buffer,
+        buffer_size,
+    );
     unsafe {
         device.destroy_buffer(staging_buffer, None);
         device.free_memory(staging_buffer_memory, None);

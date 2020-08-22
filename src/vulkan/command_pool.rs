@@ -1,10 +1,12 @@
+use super::constants::INDICES_DATA;
 use super::queue_family::QueueFamily;
 use ash::version::DeviceV1_0;
 use ash::vk::{
-    ClearColorValue, ClearValue, CommandBuffer, CommandBufferAllocateInfo, CommandBufferLevel,
-    CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo, Extent2D, Framebuffer, Offset2D,
+    Buffer, ClearColorValue, ClearValue, CommandBuffer, CommandBufferAllocateInfo,
+    CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags, CommandPool,
+    CommandPoolCreateFlags, CommandPoolCreateInfo, Extent2D, Framebuffer, IndexType, Offset2D,
     Pipeline, PipelineBindPoint, Rect2D, RenderPass, RenderPassBeginInfo, StructureType,
-    SubpassContents, CommandBufferUsageFlags, CommandBufferBeginInfo, Buffer
+    SubpassContents,
 };
 use ash::Device;
 
@@ -23,6 +25,7 @@ pub fn create_command_pool(device: &Device, queue_familes: &QueueFamily) -> Comm
     }
 }
 
+//TODO Reduce number of arguments
 pub fn create_command_buffers(
     device: &Device,
     command_pool: CommandPool,
@@ -31,6 +34,7 @@ pub fn create_command_buffers(
     render_pass: RenderPass,
     surface_extent: Extent2D,
     vertex_buffer: Buffer,
+    index_buffer: Buffer,
 ) -> Vec<CommandBuffer> {
     let command_buffer_allocate_info = CommandBufferAllocateInfo {
         s_type: StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
@@ -55,13 +59,15 @@ pub fn create_command_buffers(
             surface_extent,
             device,
             graphics_pipeline,
-            vertex_buffer
+            vertex_buffer,
+            index_buffer,
         )
     });
 
     command_buffers
 }
 
+//TODO Reduce number of arguments
 fn process_command_buffer(
     index: usize,
     command_buffer: &CommandBuffer,
@@ -71,6 +77,7 @@ fn process_command_buffer(
     device: &Device,
     graphics_pipeline: Pipeline,
     vertex_buffer: Buffer,
+    index_buffer: Buffer,
 ) {
     let command_buffer_begin_info = CommandBufferBeginInfo {
         s_type: StructureType::COMMAND_BUFFER_BEGIN_INFO,
@@ -118,7 +125,8 @@ fn process_command_buffer(
         let vertex_buffers = [vertex_buffer];
         let offsets = [0_u64];
         device.cmd_bind_vertex_buffers(*command_buffer, 0, &vertex_buffers, &offsets);
-        device.cmd_draw(*command_buffer, 3, 1, 0, 0);
+        device.cmd_bind_index_buffer(*command_buffer, index_buffer, 0, IndexType::UINT32);
+        device.cmd_draw_indexed(*command_buffer, INDICES_DATA.len() as u32, 1, 0, 0, 0);
         device.cmd_end_render_pass(*command_buffer);
         device
             .end_command_buffer(*command_buffer)

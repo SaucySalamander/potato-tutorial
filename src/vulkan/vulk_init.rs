@@ -1,5 +1,5 @@
 use super::command_pool::{create_command_buffers, create_command_pool};
-use super::constants::{MAX_FRAMES_IN_FLIGHT, VALIDATION};
+use super::constants::{INDICES_DATA, MAX_FRAMES_IN_FLIGHT, VALIDATION, VERTICES_DATA};
 use super::device::create_logical_device;
 use super::framebuffers::create_framebuffers;
 use super::graphics_pipeline::create_graphics_pipeline;
@@ -10,14 +10,14 @@ use super::render_pass::create_render_pass;
 use super::surface::{create_surface, PotatoSurface};
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
-use super::vertex::create_vertex_buffer;
+use super::vertex::{create_vertex_buffer, create_index_buffer};
 use super::vulk_validation_layers::setup_debug_utils;
 use ash::extensions::ext::DebugUtils;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
-    Buffer, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DeviceMemory, Fence, Framebuffer,
-    PhysicalDevice, Pipeline, PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue,
-    RenderPass, Result, Semaphore, StructureType, SubmitInfo,
+    Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DeviceMemory,
+    Fence, Framebuffer, PhysicalDevice, Pipeline, PipelineLayout, PipelineStageFlags,
+    PresentInfoKHR, Queue, RenderPass, Result, Semaphore, StructureType, SubmitInfo,
 };
 use ash::Device;
 use ash::Entry;
@@ -55,6 +55,8 @@ pub struct VulkanApiObjects {
     current_frame: usize,
     vertex_buffer: Buffer,
     vertex_buffer_memory: DeviceMemory,
+    index_buffer: Buffer,
+    index_buffer_memory: DeviceMemory,
 }
 
 impl VulkanApiObjects {
@@ -104,8 +106,23 @@ impl VulkanApiObjects {
         debug!("Init command pool");
         let command_pool = create_command_pool(&logical_device, &queue_family);
         debug!("Init vertex buffer");
-        let (vertex_buffer, vertex_buffer_memory) =
-            create_vertex_buffer(&instance, &logical_device, physical_device, command_pool, graphics_queue);
+        let (vertex_buffer, vertex_buffer_memory) = create_vertex_buffer(
+            &instance,
+            &logical_device,
+            physical_device,
+            command_pool,
+            graphics_queue,
+            BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::VERTEX_BUFFER,
+        );
+        debug!("Init index buffer");
+        let (index_buffer, index_buffer_memory) = create_index_buffer(
+            &instance,
+            &logical_device,
+            physical_device,
+            command_pool,
+            graphics_queue,
+            BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::INDEX_BUFFER,
+        );
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -115,6 +132,7 @@ impl VulkanApiObjects {
             render_pass,
             swapchain.swapchain_extent,
             vertex_buffer,
+            index_buffer,
         );
         debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
@@ -146,6 +164,8 @@ impl VulkanApiObjects {
             current_frame: 0,
             vertex_buffer,
             vertex_buffer_memory,
+            index_buffer,
+            index_buffer_memory,
         }
     }
 
@@ -274,6 +294,7 @@ impl VulkanApiObjects {
             self.render_pass,
             self.swapchain.swapchain_extent,
             self.vertex_buffer,
+            self.index_buffer,
         );
     }
 
@@ -373,6 +394,8 @@ impl Drop for VulkanApiObjects {
                 self.device.destroy_fence(self.in_flight_fences[i], None);
             }
             self.cleanup_swapchain();
+            self.device.destroy_buffer(self.index_buffer, None);
+            self.device.free_memory(self.index_buffer_memory, None);
             self.device.destroy_buffer(self.vertex_buffer, None);
             self.device.free_memory(self.vertex_buffer_memory, None);
             self.device.destroy_command_pool(self.command_pool, None);

@@ -1,6 +1,10 @@
 use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::populate_debug_messenger_create_info;
-use ash::extensions::khr::{Surface, XlibSurface, WaylandSurface};
+#[cfg(feature = "xlib")]
+use ash::extensions::khr::XlibSurface;
+#[cfg(feature = "wayland")]
+use ash::extensions::khr::WaylandSurface;
+use ash::extensions::khr::Surface;
 use ash::extensions::ext::DebugUtils;
 use ash::vk::{
     make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, InstanceCreateFlags,
