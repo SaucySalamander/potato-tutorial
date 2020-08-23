@@ -45,6 +45,7 @@ impl Vertex {
     }
 }
 
+//TODO undo duplicated logic
 pub fn create_vertex_buffer(
     instance: &Instance,
     device: &Device,

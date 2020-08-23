@@ -4,9 +4,9 @@ use ash::version::DeviceV1_0;
 use ash::vk::{
     Buffer, ClearColorValue, ClearValue, CommandBuffer, CommandBufferAllocateInfo,
     CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags, CommandPool,
-    CommandPoolCreateFlags, CommandPoolCreateInfo, Extent2D, Framebuffer, IndexType, Offset2D,
-    Pipeline, PipelineBindPoint, Rect2D, RenderPass, RenderPassBeginInfo, StructureType,
-    SubpassContents,
+    CommandPoolCreateFlags, CommandPoolCreateInfo, DescriptorSet, Extent2D, Framebuffer, IndexType,
+    Offset2D, Pipeline, PipelineBindPoint, PipelineLayout, Rect2D, RenderPass, RenderPassBeginInfo,
+    StructureType, SubpassContents,
 };
 use ash::Device;
 
@@ -35,6 +35,8 @@ pub fn create_command_buffers(
     surface_extent: Extent2D,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
+    pipeline_layout: PipelineLayout,
+    descriptor_sets: &Vec<DescriptorSet>,
 ) -> Vec<CommandBuffer> {
     let command_buffer_allocate_info = CommandBufferAllocateInfo {
         s_type: StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
@@ -61,6 +63,8 @@ pub fn create_command_buffers(
             graphics_pipeline,
             vertex_buffer,
             index_buffer,
+            pipeline_layout,
+            descriptor_sets,
         )
     });
 
@@ -78,6 +82,8 @@ fn process_command_buffer(
     graphics_pipeline: Pipeline,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
+    pipeline_layout: PipelineLayout,
+    descriptor_sets: &Vec<DescriptorSet>,
 ) {
     let command_buffer_begin_info = CommandBufferBeginInfo {
         s_type: StructureType::COMMAND_BUFFER_BEGIN_INFO,
@@ -124,8 +130,17 @@ fn process_command_buffer(
         );
         let vertex_buffers = [vertex_buffer];
         let offsets = [0_u64];
+        let descriptor_sets_to_bind = [descriptor_sets[index]];
         device.cmd_bind_vertex_buffers(*command_buffer, 0, &vertex_buffers, &offsets);
         device.cmd_bind_index_buffer(*command_buffer, index_buffer, 0, IndexType::UINT32);
+        device.cmd_bind_descriptor_sets(
+            *command_buffer,
+            PipelineBindPoint::GRAPHICS,
+            pipeline_layout,
+            0,
+            &descriptor_sets_to_bind,
+            &[],
+        );
         device.cmd_draw_indexed(*command_buffer, INDICES_DATA.len() as u32, 1, 0, 0, 0);
         device.cmd_end_render_pass(*command_buffer);
         device

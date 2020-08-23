@@ -10,7 +10,6 @@ pub struct SyncObjects {
     pub inflight_fences: Vec<Fence>,
 }
 
-//TODO look to refactor
 pub fn create_sync_objects(device: &Device) -> SyncObjects {
     let mut sync_objects = SyncObjects {
         image_available_semaphores: vec![],

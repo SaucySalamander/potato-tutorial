@@ -16,7 +16,7 @@ use ash::vk::{
     PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, RenderPass,
     SampleCountFlags, ShaderModule, ShaderModuleCreateFlags, ShaderModuleCreateInfo,
     ShaderStageFlags, StencilOp, StencilOpState, StructureType, VertexInputAttributeDescription,
-    VertexInputBindingDescription, Viewport, FALSE,
+    VertexInputBindingDescription, Viewport, FALSE, DescriptorSetLayout
 };
 use ash::Device;
 use std::ffi::CString;
@@ -25,6 +25,7 @@ pub fn create_graphics_pipeline(
     device: &Device,
     render_pass: RenderPass,
     swapchain_extent: Extent2D,
+    ubo_set_layout: DescriptorSetLayout
 ) -> (Pipeline, PipelineLayout) {
     let vert_shader = read_file_to_bytes("src/shaders/spv/shader-vert.spv").unwrap();
     let frag_shader = read_file_to_bytes("src/shaders/spv/shader-frag.spv").unwrap();
@@ -76,7 +77,8 @@ pub fn create_graphics_pipeline(
 
     let color_blend_state = create_color_blend_state(&color_blend_attachment_states);
 
-    let pipeline_layout_create_info = create_pipeline_layout_create_info();
+    let set_layouts = [ubo_set_layout];
+    let pipeline_layout_create_info = create_pipeline_layout_create_info(&set_layouts);
 
     let pipeline_layout = unsafe {
         device
@@ -285,13 +287,13 @@ fn create_color_blend_state(
     }
 }
 
-fn create_pipeline_layout_create_info() -> PipelineLayoutCreateInfo {
+    fn create_pipeline_layout_create_info(set_layouts: &[DescriptorSetLayout; 1]) -> PipelineLayoutCreateInfo {
     PipelineLayoutCreateInfo {
         s_type: StructureType::PIPELINE_LAYOUT_CREATE_INFO,
         p_next: std::ptr::null(),
         flags: PipelineLayoutCreateFlags::empty(),
-        set_layout_count: 0,
-        p_set_layouts: std::ptr::null(),
+        set_layout_count: set_layouts.len() as u32,
+        p_set_layouts: set_layouts.as_ptr(),
         push_constant_range_count: 0,
         p_push_constant_ranges: std::ptr::null(),
     }
