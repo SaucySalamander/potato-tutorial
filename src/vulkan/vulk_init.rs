@@ -13,14 +13,16 @@ use super::sync_objects::create_sync_objects;
 use super::vertex::{create_index_buffer, create_vertex_buffer};
 use super::vulk_validation_layers::setup_debug_utils;
 use super::UniformBufferObject::{
-    create_descriptor_set_layout, create_uniform_buffers, update_uniform_buffer,
+    create_descriptor_pool, create_descriptor_set_layout, create_descriptor_sets,
+    create_uniform_buffers, update_uniform_buffer,
 };
 use ash::extensions::ext::DebugUtils;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
-    Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DeviceMemory,
-    Fence, Framebuffer, PhysicalDevice, Pipeline, PipelineLayout, PipelineStageFlags,
-    PresentInfoKHR, Queue, RenderPass, Result, Semaphore, StructureType, SubmitInfo, DescriptorSetLayout,
+    Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DescriptorPool,
+    DescriptorSet, DescriptorSetLayout, DeviceMemory, Fence, Framebuffer, PhysicalDevice, Pipeline,
+    PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Result, Semaphore,
+    StructureType, SubmitInfo,
 };
 use ash::Device;
 use ash::Entry;
@@ -63,6 +65,8 @@ pub struct VulkanApiObjects {
     uniform_buffers: Vec<Buffer>,
     uniform_buffers_memory: Vec<DeviceMemory>,
     ubo_layout: DescriptorSetLayout,
+    descriptor_pool: DescriptorPool,
+    descriptor_sets: Vec<DescriptorSet>,
 }
 
 impl VulkanApiObjects {
@@ -142,7 +146,17 @@ impl VulkanApiObjects {
             &physical_device_memory_properties,
             swapchain.swapchain_images.len(),
         );
-
+        debug!("Init descriptor pool");
+        let descriptor_pool =
+            create_descriptor_pool(&logical_device, swapchain.swapchain_images.len());
+        debug!("Init descriptor sets");
+        let descriptor_sets = create_descriptor_sets(
+            &logical_device,
+            descriptor_pool,
+            ubo_layout,
+            &uniform_buffers,
+            swapchain.swapchain_images.len(),
+        );
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -153,6 +167,8 @@ impl VulkanApiObjects {
             swapchain.swapchain_extent,
             vertex_buffer,
             index_buffer,
+            pipeline_layout,
+            &descriptor_sets,
         );
         debug!("Init sync objects");
         let sync_objects = create_sync_objects(&logical_device);
@@ -189,6 +205,8 @@ impl VulkanApiObjects {
             uniform_buffers,
             uniform_buffers_memory,
             ubo_layout,
+            descriptor_pool,
+            descriptor_sets,
         }
     }
 
@@ -217,7 +235,13 @@ impl VulkanApiObjects {
             }
         };
 
-        update_uniform_buffer(&self.swapchain, &self.device, image_index as usize, delta_time, &self.uniform_buffers_memory);
+        update_uniform_buffer(
+            &self.swapchain,
+            &self.device,
+            image_index as usize,
+            delta_time,
+            &self.uniform_buffers_memory,
+        );
 
         let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
         let wait_stages = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
@@ -321,6 +345,8 @@ impl VulkanApiObjects {
             self.swapchain.swapchain_extent,
             self.vertex_buffer,
             self.index_buffer,
+            self.pipeline_layout,
+            &self.descriptor_sets,
         );
     }
 
@@ -356,7 +382,6 @@ impl VulkanApiObjects {
     pub fn init_event_loop(mut self, event_loop: EventLoop<()>) {
         let time = std::time::Instant::now();
         let mut delta_frame = 0;
-        
         event_loop.run(move |event, event_loop, control_flow| {
             *control_flow = ControlFlow::Wait;
 
@@ -426,10 +451,12 @@ impl Drop for VulkanApiObjects {
                 self.device.destroy_fence(self.in_flight_fences[i], None);
             }
             self.cleanup_swapchain();
-            self.device.destroy_descriptor_set_layout(self.ubo_layout, None);
-            self.uniform_buffers.iter().enumerate().for_each(|(i,_)| {
+            self.device
+                .destroy_descriptor_set_layout(self.ubo_layout, None);
+            self.uniform_buffers.iter().enumerate().for_each(|(i, _)| {
                 self.device.destroy_buffer(self.uniform_buffers[i], None);
-                self.device.free_memory(self.uniform_buffers_memory[i], None);
+                self.device
+                    .free_memory(self.uniform_buffers_memory[i], None);
             });
             self.device.destroy_buffer(self.index_buffer, None);
             self.device.free_memory(self.index_buffer_memory, None);

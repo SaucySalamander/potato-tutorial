@@ -2,9 +2,12 @@ use super::buffer::create_buffer;
 use super::swapchain::PotatoSwapChain;
 use ash::version::DeviceV1_0;
 use ash::vk::{
-    Buffer, BufferUsageFlags, DescriptorSetLayout, DescriptorSetLayoutBinding,
-    DescriptorSetLayoutCreateFlags, DescriptorSetLayoutCreateInfo, DescriptorType, DeviceMemory,
-    MemoryPropertyFlags, PhysicalDeviceMemoryProperties, ShaderStageFlags, StructureType, MemoryMapFlags
+    Buffer, BufferUsageFlags, DescriptorBufferInfo, DescriptorPool, DescriptorPoolCreateFlags,
+    DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSet, DescriptorSetAllocateInfo,
+    DescriptorSetLayout, DescriptorSetLayoutBinding, DescriptorSetLayoutCreateFlags,
+    DescriptorSetLayoutCreateInfo, DescriptorType, DeviceMemory, MemoryMapFlags,
+    MemoryPropertyFlags, PhysicalDeviceMemoryProperties, ShaderStageFlags, StructureType,
+    WriteDescriptorSet,
 };
 use ash::Device;
 use cgmath::{perspective, Deg, Matrix4, Point3, Vector3};
@@ -98,9 +101,85 @@ pub fn update_uniform_buffer(
                 MemoryMapFlags::empty(),
             )
             .expect("Failed to map memory") as *mut UniformBufferObject;
-        
-            data_ptr.copy_from_nonoverlapping(ubos.as_ptr(), ubos.len());
 
-            device.unmap_memory(uniform_buffers_memory[current_image]);
+        data_ptr.copy_from_nonoverlapping(ubos.as_ptr(), ubos.len());
+
+        device.unmap_memory(uniform_buffers_memory[current_image]);
     }
+}
+
+pub fn create_descriptor_pool(device: &Device, swapchain_images_size: usize) -> DescriptorPool {
+    let pool_sizes = [DescriptorPoolSize {
+        ty: DescriptorType::UNIFORM_BUFFER,
+        descriptor_count: swapchain_images_size as u32,
+    }];
+
+    let descriptor_pool_create_info = DescriptorPoolCreateInfo {
+        s_type: StructureType::DESCRIPTOR_POOL_CREATE_INFO,
+        p_next: std::ptr::null(),
+        flags: DescriptorPoolCreateFlags::empty(),
+        max_sets: swapchain_images_size as u32,
+        pool_size_count: pool_sizes.len() as u32,
+        p_pool_sizes: pool_sizes.as_ptr(),
+    };
+
+    unsafe {
+        device
+            .create_descriptor_pool(&descriptor_pool_create_info, None)
+            .expect("Failed to create descriptor pool")
+    }
+}
+
+pub fn create_descriptor_sets(
+    device: &Device,
+    descriptor_pool: DescriptorPool,
+    descriptor_set_layout: DescriptorSetLayout,
+    uniform_buffers: &Vec<Buffer>,
+    swapchain_images_size: usize,
+) -> Vec<DescriptorSet> {
+    let mut layouts: Vec<DescriptorSetLayout> = vec![];
+    for _ in 0..swapchain_images_size {
+        layouts.push(descriptor_set_layout);
+    }
+
+    let descriptor_set_allocate_info = DescriptorSetAllocateInfo {
+        s_type: StructureType::DESCRIPTOR_SET_ALLOCATE_INFO,
+        p_next: std::ptr::null(),
+        descriptor_pool,
+        descriptor_set_count: swapchain_images_size as u32,
+        p_set_layouts: layouts.as_ptr(),
+    };
+
+    let descriptor_sets = unsafe {
+        device
+            .allocate_descriptor_sets(&descriptor_set_allocate_info)
+            .expect("Failed to allocate descriptor sets")
+    };
+
+    descriptor_sets.iter().enumerate().for_each(|(i, x)| {
+        let descriptor_buffer_info = [DescriptorBufferInfo {
+            buffer: uniform_buffers[i],
+            offset: 0,
+            range: std::mem::size_of::<UniformBufferObject>() as u64,
+        }];
+
+        let descriptor_write_sets = [WriteDescriptorSet {
+            s_type: StructureType::WRITE_DESCRIPTOR_SET,
+            p_next: std::ptr::null(),
+            dst_set: *x,
+            dst_binding: 0,
+            dst_array_element: 0,
+            descriptor_count: 1,
+            descriptor_type: DescriptorType::UNIFORM_BUFFER,
+            p_image_info: std::ptr::null(),
+            p_buffer_info: descriptor_buffer_info.as_ptr(),
+            p_texel_buffer_view: std::ptr::null(),
+        }];
+
+        unsafe {
+            device.update_descriptor_sets(&descriptor_write_sets, &[]);
+        }
+    });
+
+    descriptor_sets
 }
