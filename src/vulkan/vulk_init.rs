@@ -10,14 +10,17 @@ use super::render_pass::create_render_pass;
 use super::surface::{create_surface, PotatoSurface};
 use super::swapchain::{create_swapchain, PotatoSwapChain};
 use super::sync_objects::create_sync_objects;
-use super::vertex::{create_vertex_buffer, create_index_buffer};
+use super::vertex::{create_index_buffer, create_vertex_buffer};
 use super::vulk_validation_layers::setup_debug_utils;
+use super::UniformBufferObject::{
+    create_descriptor_set_layout, create_uniform_buffers, update_uniform_buffer,
+};
 use ash::extensions::ext::DebugUtils;
 use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
     Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DeviceMemory,
     Fence, Framebuffer, PhysicalDevice, Pipeline, PipelineLayout, PipelineStageFlags,
-    PresentInfoKHR, Queue, RenderPass, Result, Semaphore, StructureType, SubmitInfo,
+    PresentInfoKHR, Queue, RenderPass, Result, Semaphore, StructureType, SubmitInfo, DescriptorSetLayout,
 };
 use ash::Device;
 use ash::Entry;
@@ -57,6 +60,9 @@ pub struct VulkanApiObjects {
     vertex_buffer_memory: DeviceMemory,
     index_buffer: Buffer,
     index_buffer_memory: DeviceMemory,
+    uniform_buffers: Vec<Buffer>,
+    uniform_buffers_memory: Vec<DeviceMemory>,
+    ubo_layout: DescriptorSetLayout,
 }
 
 impl VulkanApiObjects {
@@ -73,7 +79,8 @@ impl VulkanApiObjects {
         let potato_surface = create_surface(&entry, &instance, &window);
         debug!("Init physical device");
         let physical_device = select_physical_device(&instance, &potato_surface);
-
+        let physical_device_memory_properties =
+            unsafe { instance.get_physical_device_memory_properties(physical_device) };
         describe_device(&instance, physical_device);
 
         debug!("Init logical device");
@@ -93,9 +100,15 @@ impl VulkanApiObjects {
         };
         debug!("Init render pass");
         let render_pass = create_render_pass(&logical_device, swapchain.swapchain_format);
+        debug!("Init descriptor layout");
+        let ubo_layout = create_descriptor_set_layout(&logical_device);
         debug!("Init graphics pipeline");
-        let (graphics_pipeline, pipeline_layout) =
-            create_graphics_pipeline(&logical_device, render_pass, swapchain.swapchain_extent);
+        let (graphics_pipeline, pipeline_layout) = create_graphics_pipeline(
+            &logical_device,
+            render_pass,
+            swapchain.swapchain_extent,
+            ubo_layout,
+        );
         debug!("Init framebuffers");
         let swapchain_framebuffers = create_framebuffers(
             &logical_device,
@@ -123,6 +136,13 @@ impl VulkanApiObjects {
             graphics_queue,
             BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::INDEX_BUFFER,
         );
+        debug!("Init ubo buffer");
+        let (uniform_buffers, uniform_buffers_memory) = create_uniform_buffers(
+            &logical_device,
+            &physical_device_memory_properties,
+            swapchain.swapchain_images.len(),
+        );
+
         debug!("Init command buffers");
         let command_buffers = create_command_buffers(
             &logical_device,
@@ -166,10 +186,13 @@ impl VulkanApiObjects {
             vertex_buffer_memory,
             index_buffer,
             index_buffer_memory,
+            uniform_buffers,
+            uniform_buffers_memory,
+            ubo_layout,
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, delta_time: f32) {
         let wait_fences = [self.in_flight_fences[self.current_frame]];
         let (image_index, _is_sub_optimal) = unsafe {
             self.device
@@ -193,6 +216,8 @@ impl VulkanApiObjects {
                 },
             }
         };
+
+        update_uniform_buffer(&self.swapchain, &self.device, image_index as usize, delta_time, &self.uniform_buffers_memory);
 
         let wait_semaphores = [self.image_available_semaphores[self.current_frame]];
         let wait_stages = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
@@ -277,6 +302,7 @@ impl VulkanApiObjects {
             &self.device,
             self.render_pass,
             self.swapchain.swapchain_extent,
+            self.ubo_layout,
         );
         self.graphics_pipeline = graphics_pipeline;
         self.pipeline_layout = pipeline_layout;
@@ -328,6 +354,9 @@ impl VulkanApiObjects {
     }
 
     pub fn init_event_loop(mut self, event_loop: EventLoop<()>) {
+        let time = std::time::Instant::now();
+        let mut delta_frame = 0;
+        
         event_loop.run(move |event, event_loop, control_flow| {
             *control_flow = ControlFlow::Wait;
 
@@ -368,7 +397,10 @@ impl VulkanApiObjects {
                     }
                 }
                 Event::RedrawRequested(_window_id) => {
-                    self.draw();
+                    let delta_time = delta_frame as f32 / 1_000_000.0 as f32;
+                    self.draw(delta_time);
+
+                    delta_frame = time.elapsed().subsec_micros();
                 }
                 Event::LoopDestroyed => {
                     unsafe {
@@ -394,6 +426,11 @@ impl Drop for VulkanApiObjects {
                 self.device.destroy_fence(self.in_flight_fences[i], None);
             }
             self.cleanup_swapchain();
+            self.device.destroy_descriptor_set_layout(self.ubo_layout, None);
+            self.uniform_buffers.iter().enumerate().for_each(|(i,_)| {
+                self.device.destroy_buffer(self.uniform_buffers[i], None);
+                self.device.free_memory(self.uniform_buffers_memory[i], None);
+            });
             self.device.destroy_buffer(self.index_buffer, None);
             self.device.free_memory(self.index_buffer_memory, None);
             self.device.destroy_buffer(self.vertex_buffer, None);

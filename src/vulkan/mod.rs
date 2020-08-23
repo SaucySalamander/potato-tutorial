@@ -16,3 +16,4 @@ mod instance;
 mod sync_objects;
 mod vertex;
 mod buffer;
+mod UniformBufferObject;
