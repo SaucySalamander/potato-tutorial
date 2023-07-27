@@ -17,16 +17,13 @@ use super::UniformBufferObject::{
     create_uniform_buffers, update_uniform_buffer,
 };
 use ash::extensions::ext::DebugUtils;
-use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
     Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DescriptorPool,
     DescriptorSet, DescriptorSetLayout, DeviceMemory, Fence, Framebuffer, PhysicalDevice, Pipeline,
     PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Result, Semaphore,
     StructureType, SubmitInfo,
 };
-use ash::Device;
-use ash::Entry;
-use ash::Instance;
+use ash::{vk, Device, Entry, Instance};
 use log::debug;
 use std::collections::HashMap;
 use winit::{
@@ -74,7 +71,7 @@ impl VulkanApiObjects {
         debug!("Init window");
         let window = VulkanApiObjects::init_window(&event_loop, "origin");
         debug!("Init entry");
-        let entry = Entry::new().unwrap();
+        let entry = Entry::linked();
         debug!("Init instance");
         let instance = create_instance(&entry);
         debug!("Init debug utils");
