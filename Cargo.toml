@@ -12,8 +12,9 @@ winit = "0.25.0"
 simple_logger = "1.7.0"
 num = "0.4.0"
 log = "0.4.11"
-memoffset = "0.5.5"
+memoffset = "0.6.4"
 cgmath = "0.18.0"
+
 
 [features]
 default = ["wayland"]
