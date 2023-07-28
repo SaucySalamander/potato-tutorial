@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 ash = "0.37.2"
-simple_logger = "1.13.0"
+simple_logger = "3.0.0"
 winit = "0.25.0"
 num = "0.4.0"
 log = "0.4.11"
