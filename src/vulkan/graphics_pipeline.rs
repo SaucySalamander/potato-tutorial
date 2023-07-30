@@ -1,9 +1,8 @@
 use super::vertex::Vertex;
 use crate::io::file::read_file_to_bytes;
-use ash::version::DeviceV1_0;
 use ash::vk::{
-    BlendFactor, BlendOp, ColorComponentFlags, CompareOp, CullModeFlags, Extent2D, FrontFace,
-    GraphicsPipelineCreateInfo, LogicOp, Offset2D, Pipeline, PipelineCache,
+    BlendFactor, BlendOp, ColorComponentFlags, CompareOp, CullModeFlags, DescriptorSetLayout,
+    Extent2D, FrontFace, GraphicsPipelineCreateInfo, LogicOp, Offset2D, Pipeline, PipelineCache,
     PipelineColorBlendAttachmentState, PipelineColorBlendStateCreateFlags,
     PipelineColorBlendStateCreateInfo, PipelineCreateFlags, PipelineDepthStencilStateCreateFlags,
     PipelineDepthStencilStateCreateInfo, PipelineInputAssemblyStateCreateFlags,
@@ -16,7 +15,7 @@ use ash::vk::{
     PipelineViewportStateCreateInfo, PolygonMode, PrimitiveTopology, Rect2D, RenderPass,
     SampleCountFlags, ShaderModule, ShaderModuleCreateFlags, ShaderModuleCreateInfo,
     ShaderStageFlags, StencilOp, StencilOpState, StructureType, VertexInputAttributeDescription,
-    VertexInputBindingDescription, Viewport, FALSE, DescriptorSetLayout
+    VertexInputBindingDescription, Viewport, FALSE,
 };
 use ash::Device;
 use std::ffi::CString;
@@ -25,7 +24,7 @@ pub fn create_graphics_pipeline(
     device: &Device,
     render_pass: RenderPass,
     swapchain_extent: Extent2D,
-    ubo_set_layout: DescriptorSetLayout
+    ubo_set_layout: DescriptorSetLayout,
 ) -> (Pipeline, PipelineLayout) {
     let vert_shader = read_file_to_bytes("src/shaders/spv/shader-vert.spv").unwrap();
     let frag_shader = read_file_to_bytes("src/shaders/spv/shader-frag.spv").unwrap();
@@ -262,7 +261,7 @@ fn create_depth_state_create_info(
 fn create_color_blend_attachment_states() -> [PipelineColorBlendAttachmentState; 1] {
     [PipelineColorBlendAttachmentState {
         blend_enable: FALSE,
-        color_write_mask: ColorComponentFlags::all(),
+        color_write_mask: ColorComponentFlags::empty(),
         src_color_blend_factor: BlendFactor::ONE,
         dst_color_blend_factor: BlendFactor::ZERO,
         color_blend_op: BlendOp::ADD,
@@ -287,7 +286,9 @@ fn create_color_blend_state(
     }
 }
 
-    fn create_pipeline_layout_create_info(set_layouts: &[DescriptorSetLayout; 1]) -> PipelineLayoutCreateInfo {
+fn create_pipeline_layout_create_info(
+    set_layouts: &[DescriptorSetLayout; 1],
+) -> PipelineLayoutCreateInfo {
     PipelineLayoutCreateInfo {
         s_type: StructureType::PIPELINE_LAYOUT_CREATE_INFO,
         p_next: std::ptr::null(),

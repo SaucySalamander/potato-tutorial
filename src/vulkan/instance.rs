@@ -31,7 +31,7 @@ pub fn create_instance(entry: &Entry) -> Instance {
         application_version: make_api_version(0, 0, 0, 1),
         p_engine_name: engine_name.as_ptr(),
         engine_version: make_api_version(0, 0, 0, 1),
-        api_version: make_api_version(0, 1, 2, 148),
+        api_version: make_api_version(0, 1, 3, 260),
     };
 
     let debug_utils_create_info = populate_debug_messenger_create_info();

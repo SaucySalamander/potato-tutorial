@@ -1,4 +1,3 @@
-use ash::version::DeviceV1_0;
 use ash::vk::{
     AccessFlags, AttachmentDescription, AttachmentDescriptionFlags, AttachmentLoadOp,
     AttachmentReference, AttachmentStoreOp, DependencyFlags, Format, ImageLayout,

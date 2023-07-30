@@ -1,12 +1,12 @@
 use super::queue_family::QueueFamily;
 use super::surface::PotatoSurface;
 use ash::extensions::khr::Swapchain;
-use ash::version::DeviceV1_0;
 use ash::vk::{
-    ColorSpaceKHR, CompositeAlphaFlagsKHR, Extent2D, Format, Image, ImageUsageFlags, ImageView,
-    PhysicalDevice, PresentModeKHR, SharingMode, StructureType, SurfaceCapabilitiesKHR,
-    SurfaceFormatKHR, SwapchainCreateFlagsKHR, SwapchainCreateInfoKHR, SwapchainKHR, TRUE, ImageViewCreateInfo, 
-    ImageViewCreateFlags, ImageViewType, ImageSubresourceRange, ComponentSwizzle, ComponentMapping, ImageAspectFlags
+    ColorSpaceKHR, ComponentMapping, ComponentSwizzle, CompositeAlphaFlagsKHR, Extent2D, Format,
+    Image, ImageAspectFlags, ImageSubresourceRange, ImageUsageFlags, ImageView,
+    ImageViewCreateFlags, ImageViewCreateInfo, ImageViewType, PhysicalDevice, PresentModeKHR,
+    SharingMode, StructureType, SurfaceCapabilitiesKHR, SurfaceFormatKHR, SwapchainCreateFlagsKHR,
+    SwapchainCreateInfoKHR, SwapchainKHR, TRUE,
 };
 use ash::{Device, Instance};
 use num::clamp;
@@ -82,7 +82,8 @@ pub fn create_swapchain(
             .expect("Failed to get swapchain images")
     };
 
-    let swapchain_image_views = create_image_views(device, surface_format.format, &swapchain_images);
+    let swapchain_image_views =
+        create_image_views(device, surface_format.format, &swapchain_images);
 
     PotatoSwapChain {
         swapchain_loader,
@@ -155,8 +156,11 @@ fn choose_swapchain_extent(capabilities: &SurfaceCapabilitiesKHR) -> Extent2D {
     }
 }
 
-fn create_image_views(device: &Device, surface_format: Format, images: &[Image]) -> Vec<ImageView>{
-    images.iter().map(|x| create_image_view(surface_format, *x, device)).collect()
+fn create_image_views(device: &Device, surface_format: Format, images: &[Image]) -> Vec<ImageView> {
+    images
+        .iter()
+        .map(|x| create_image_view(surface_format, *x, device))
+        .collect()
 }
 
 fn create_image_view(surface_format: Format, image: Image, device: &Device) -> ImageView {
@@ -183,6 +187,8 @@ fn create_image_view(surface_format: Format, image: Image, device: &Device) -> I
     };
 
     unsafe {
-        device.create_image_view(&image_view_create_info, None).expect("Failed to create image view")
+        device
+            .create_image_view(&image_view_create_info, None)
+            .expect("Failed to create image view")
     }
 }

@@ -1,4 +1,3 @@
-use ash::version::DeviceV1_0;
 use ash::vk::{
     Buffer, BufferCopy, BufferCreateFlags, BufferCreateInfo, BufferUsageFlags,
     CommandBufferAllocateInfo, CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags,

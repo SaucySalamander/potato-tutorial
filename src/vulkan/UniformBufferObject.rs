@@ -1,6 +1,5 @@
 use super::buffer::create_buffer;
 use super::swapchain::PotatoSwapChain;
-use ash::version::DeviceV1_0;
 use ash::vk::{
     Buffer, BufferUsageFlags, DescriptorBufferInfo, DescriptorPool, DescriptorPoolCreateFlags,
     DescriptorPoolCreateInfo, DescriptorPoolSize, DescriptorSet, DescriptorSetAllocateInfo,
@@ -77,7 +76,7 @@ pub fn update_uniform_buffer(
 ) {
     let ubos = [UniformBufferObject {
         model: Matrix4::from_angle_z(Deg(90.0 * delta_time)),
-        view: Matrix4::look_at(
+        view: Matrix4::look_at_rh(
             Point3::new(2.0, 2.0, 2.0),
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, 0.0, 1.0),
