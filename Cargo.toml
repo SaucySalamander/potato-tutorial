@@ -11,7 +11,7 @@ ash = "0.37.2"
 simple_logger = "1.13.0"
 winit = "0.25.0"
 num = "0.4.0"
-log = "0.4.11"
+log = "0.4.20"
 memoffset = "0.6.4"
 cgmath = "0.18.0"
 
