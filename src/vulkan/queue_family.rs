@@ -1,5 +1,4 @@
 use super::surface::PotatoSurface;
-use ash::version::InstanceV1_0;
 use ash::vk::{PhysicalDevice, QueueFlags};
 use ash::Instance;
 use log::debug;

@@ -1,7 +1,5 @@
 use super::buffer::{copy_buffer, create_buffer};
-use super::constants::{VERTICES_DATA,INDICES_DATA};
-use ash::version::DeviceV1_0;
-use ash::version::InstanceV1_0;
+use super::constants::{INDICES_DATA, VERTICES_DATA};
 use ash::vk::{
     Buffer, BufferUsageFlags, CommandPool, DeviceMemory, DeviceSize, Format, MemoryMapFlags,
     MemoryPropertyFlags, PhysicalDevice, Queue, VertexInputAttributeDescription,

@@ -1,22 +1,21 @@
+use super::constants::VALIDATION;
 use super::utilities::{conver_str_vec_to_c_str_ptr_vec, vk_to_string};
 use super::vulk_validation_layers::populate_debug_messenger_create_info;
-#[cfg(feature = "xlib")]
-use ash::extensions::khr::XlibSurface;
+use ash::extensions::ext::DebugUtils;
+use ash::extensions::khr::Surface;
 #[cfg(feature = "wayland")]
 use ash::extensions::khr::WaylandSurface;
-use ash::extensions::khr::Surface;
-use ash::extensions::ext::DebugUtils;
+#[cfg(feature = "xlib")]
+use ash::extensions::khr::XlibSurface;
 use ash::vk::{
-    make_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, InstanceCreateFlags,
-    InstanceCreateInfo, StructureType
+    make_api_version, ApplicationInfo, DebugUtilsMessengerCreateInfoEXT, InstanceCreateFlags,
+    InstanceCreateInfo, StructureType,
 };
-use std::ffi::CString;
-use std::os::raw::c_void;
 use ash::Entry;
 use ash::Instance;
-use ash::version::EntryV1_0;
-use super::constants::VALIDATION;
-use log::{debug};
+use log::debug;
+use std::ffi::CString;
+use std::os::raw::c_void;
 
 pub fn create_instance(entry: &Entry) -> Instance {
     if VALIDATION.is_enable && !check_validation_layer_support(entry) {
@@ -29,10 +28,10 @@ pub fn create_instance(entry: &Entry) -> Instance {
         s_type: StructureType::APPLICATION_INFO,
         p_next: std::ptr::null(),
         p_application_name: app_name.as_ptr(),
-        application_version: make_version(0, 0, 1),
+        application_version: make_api_version(0, 0, 0, 1),
         p_engine_name: engine_name.as_ptr(),
-        engine_version: make_version(0, 0, 1),
-        api_version: make_version(1, 2, 148),
+        engine_version: make_api_version(0, 0, 0, 1),
+        api_version: make_api_version(0, 1, 3, 260),
     };
 
     let debug_utils_create_info = populate_debug_messenger_create_info();

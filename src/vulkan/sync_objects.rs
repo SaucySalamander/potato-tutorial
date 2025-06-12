@@ -1,8 +1,9 @@
-
-use ash::vk::{SemaphoreCreateFlags, SemaphoreCreateInfo,FenceCreateFlags, FenceCreateInfo, StructureType, Semaphore, Fence};
-use ash::Device;
-use ash::version::DeviceV1_0;
 use super::constants::MAX_FRAMES_IN_FLIGHT;
+use ash::vk::{
+    Fence, FenceCreateFlags, FenceCreateInfo, Semaphore, SemaphoreCreateFlags, SemaphoreCreateInfo,
+    StructureType,
+};
+use ash::Device;
 
 pub struct SyncObjects {
     pub image_available_semaphores: Vec<Semaphore>,

@@ -1,14 +1,14 @@
 use ash::extensions::khr::Surface;
-#[cfg(feature = "xlib")]
-use ash::extensions::khr::XlibSurface;
 use ash::extensions::khr::WaylandSurface;
 #[cfg(feature = "xlib")]
-use ash::vk::{Window, Display, XlibSurfaceCreateInfoKHR};
+use ash::extensions::khr::XlibSurface;
+#[cfg(feature = "xlib")]
+use ash::vk::{Display, Window, XlibSurfaceCreateInfoKHR};
 use ash::vk::{StructureType, SurfaceKHR, WaylandSurfaceCreateInfoKHR};
 use ash::{Entry, Instance};
-use winit::platform::unix::WindowExtUnix;
-use winit::window::Window as WinitWindow;
 use log::debug;
+use winit::platform::wayland::WindowExtWayland;
+use winit::window::Window as WinitWindow;
 
 pub struct PotatoSurface {
     pub surface_loader: Surface,

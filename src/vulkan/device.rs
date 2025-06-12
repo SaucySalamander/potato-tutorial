@@ -1,16 +1,21 @@
+use super::constants::VALIDATION;
+use super::queue_family::{find_graphical_queue_family, QueueFamily};
+use super::surface::PotatoSurface;
+use super::utilities::conver_str_vec_to_c_str_ptr_vec;
+use ash::extensions::khr::Swapchain;
+use ash::vk::{
+    DeviceCreateFlags, DeviceCreateInfo, DeviceQueueCreateFlags, DeviceQueueCreateInfo,
+    PhysicalDevice, PhysicalDeviceFeatures, StructureType,
+};
 use ash::Device;
 use ash::Instance;
-use ash::version::InstanceV1_0;
-use ash::version::DeviceV1_0;
-use ash::vk::{PhysicalDevice, StructureType, DeviceQueueCreateFlags, DeviceQueueCreateInfo, PhysicalDeviceFeatures, DeviceCreateInfo, DeviceCreateFlags};
-use ash::extensions::khr::Swapchain;
-use super::queue_family::{find_graphical_queue_family, QueueFamily};
-use super::utilities::conver_str_vec_to_c_str_ptr_vec;
-use super::constants::VALIDATION;
-use super::surface::PotatoSurface;
 use log::debug;
 
-pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevice, surface: &PotatoSurface) -> (Device, QueueFamily){
+pub fn create_logical_device(
+    instance: &Instance,
+    physical_device: PhysicalDevice,
+    surface: &PotatoSurface,
+) -> (Device, QueueFamily) {
     let queue_family = find_graphical_queue_family(instance, physical_device, surface);
 
     let queue_priorities = [1.0_f32];
@@ -19,7 +24,7 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
         s_type: StructureType::DEVICE_QUEUE_CREATE_INFO,
         p_next: std::ptr::null(),
         flags: DeviceQueueCreateFlags::empty(),
-        queue_family_index: queue_family.graphics_family.unwrap() as u32, 
+        queue_family_index: queue_family.graphics_family.unwrap() as u32,
         p_queue_priorities: queue_priorities.as_ptr(),
         queue_count: queue_priorities.len() as u32,
     };
@@ -28,12 +33,11 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
         ..Default::default()
     };
 
-    let (cstring_vec, enable_layer_names) = conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
+    let (cstring_vec, enable_layer_names) =
+        conver_str_vec_to_c_str_ptr_vec(VALIDATION.required_validation_layers.to_vec());
     debug!("{:?}", cstring_vec);
 
-    let enable_extension_names = [
-        Swapchain::name().as_ptr(),
-    ];
+    let enable_extension_names = [Swapchain::name().as_ptr()];
 
     let device_create_info = DeviceCreateInfo {
         s_type: StructureType::DEVICE_CREATE_INFO,
@@ -57,12 +61,13 @@ pub fn create_logical_device(instance: &Instance, physical_device: PhysicalDevic
     };
 
     let device: Device = unsafe {
-        instance.create_device(physical_device, &device_create_info, None).expect("Failed to create logical device")
+        instance
+            .create_device(physical_device, &device_create_info, None)
+            .expect("Failed to create logical device")
     };
 
-    let _graphics_queue = unsafe {
-        device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0) 
-    };
+    let _graphics_queue =
+        unsafe { device.get_device_queue(queue_family.graphics_family.unwrap() as u32, 0) };
 
     (device, queue_family)
 }

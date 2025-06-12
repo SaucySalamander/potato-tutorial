@@ -17,16 +17,13 @@ use super::UniformBufferObject::{
     create_uniform_buffers, update_uniform_buffer,
 };
 use ash::extensions::ext::DebugUtils;
-use ash::version::{DeviceV1_0, InstanceV1_0};
 use ash::vk::{
     Buffer, BufferUsageFlags, CommandBuffer, CommandPool, DebugUtilsMessengerEXT, DescriptorPool,
     DescriptorSet, DescriptorSetLayout, DeviceMemory, Fence, Framebuffer, PhysicalDevice, Pipeline,
     PipelineLayout, PipelineStageFlags, PresentInfoKHR, Queue, RenderPass, Result, Semaphore,
     StructureType, SubmitInfo,
 };
-use ash::Device;
-use ash::Entry;
-use ash::Instance;
+use ash::{Device, Entry, Instance};
 use log::debug;
 use std::collections::HashMap;
 use winit::{
@@ -37,25 +34,25 @@ use winit::{
 };
 
 pub struct VulkanApiObjects {
-    windows: HashMap<WindowId, Window>,
-    _entry: Entry,
+    windows: Option<HashMap<WindowId, Window>>,
+    entry: Entry,
     instance: Instance,
-    surface: PotatoSurface,
+    surface: Option<PotatoSurface>,
     queue_family: QueueFamily,
-    debug_utils_loader: DebugUtils,
-    debug_messenger: DebugUtilsMessengerEXT,
+    debug_utils_loader: Option<DebugUtils>,
+    debug_messenger: Option<DebugUtilsMessengerEXT>,
     physical_device: PhysicalDevice,
     device: Device,
     graphics_queue: Queue,
-    swapchain: PotatoSwapChain,
+    swapchain: Option<PotatoSwapChain>,
     pipeline_layout: PipelineLayout,
     render_pass: RenderPass,
     graphics_pipeline: Pipeline,
-    swapchain_framebuffers: Vec<Framebuffer>,
+    swapchain_framebuffers: Option<Vec<Framebuffer>>,
     command_pool: CommandPool,
     command_buffers: Vec<CommandBuffer>,
-    image_available_semaphores: Vec<Semaphore>,
-    render_finished_semaphores: Vec<Semaphore>,
+    image_available_semaphores: Option<Vec<Semaphore>>,
+    render_finished_semaphores: Option<Vec<Semaphore>>,
     in_flight_fences: Vec<Fence>,
     current_frame: usize,
     vertex_buffer: Buffer,
@@ -70,11 +67,12 @@ pub struct VulkanApiObjects {
 }
 
 impl VulkanApiObjects {
+    //TODO Does not currently work in the lib and as referenced outside the lib
     pub fn init(event_loop: &EventLoop<()>) -> VulkanApiObjects {
         debug!("Init window");
         let window = VulkanApiObjects::init_window(&event_loop, "origin");
         debug!("Init entry");
-        let entry = Entry::new().unwrap();
+        let entry = Entry::linked();
         debug!("Init instance");
         let instance = create_instance(&entry);
         debug!("Init debug utils");
@@ -177,25 +175,25 @@ impl VulkanApiObjects {
         windows.insert(window.id(), window);
 
         VulkanApiObjects {
-            windows,
-            _entry: entry,
+            windows: Some(windows),
+            entry: entry,
             instance,
-            surface: potato_surface,
+            surface: Some(potato_surface),
             queue_family,
-            debug_utils_loader,
-            debug_messenger,
+            debug_utils_loader: Some(debug_utils_loader),
+            debug_messenger: Some(debug_messenger),
             physical_device,
             device: logical_device,
             graphics_queue,
-            swapchain,
+            swapchain: Some(swapchain),
             pipeline_layout,
             render_pass,
             graphics_pipeline,
-            swapchain_framebuffers,
+            swapchain_framebuffers: Some(swapchain_framebuffers),
             command_pool,
             command_buffers,
-            image_available_semaphores: sync_objects.image_available_semaphores,
-            render_finished_semaphores: sync_objects.render_finished_semaphores,
+            image_available_semaphores: Some(sync_objects.image_available_semaphores),
+            render_finished_semaphores: Some(sync_objects.render_finished_semaphores),
             in_flight_fences: sync_objects.inflight_fences,
             current_frame: 0,
             vertex_buffer,
@@ -207,6 +205,46 @@ impl VulkanApiObjects {
             ubo_layout,
             descriptor_pool,
             descriptor_sets,
+        }
+    }
+
+    pub fn init_compute() -> VulkanApiObjects {
+        debug!("Linking entry");
+        let entry = Entry::linked();
+        debug!("Creating instance");
+        let instance = create_instance(&entry);
+
+        VulkanApiObjects {
+            windows: None,
+            entry: entry,
+            instance: instance,
+            surface: None,
+            queue_family: None,
+            debug_utils_loader: None,
+            debug_messenger: None,
+            physical_device: None,
+            device: None,
+            graphics_queue: None,
+            swapchain: None,
+            pipeline_layout: None,
+            render_pass: None,
+            graphics_pipeline: None,
+            swapchain_framebuffers: None,
+            command_pool: None,
+            command_buffers: None,
+            image_available_semaphores: None,
+            render_finished_semaphores: None,
+            in_flight_fences: None,
+            current_frame: None,
+            vertex_buffer: None,
+            vertex_buffer_memory: None,
+            index_buffer: None,
+            index_buffer_memory: None,
+            uniform_buffers: None,
+            uniform_buffers_memory: None,
+            ubo_layout: None,
+            descriptor_pool: None,
+            descriptor_sets: None,
         }
     }
 

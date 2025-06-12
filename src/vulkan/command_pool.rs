@@ -1,6 +1,5 @@
 use super::constants::INDICES_DATA;
 use super::queue_family::QueueFamily;
-use ash::version::DeviceV1_0;
 use ash::vk::{
     Buffer, ClearColorValue, ClearValue, CommandBuffer, CommandBufferAllocateInfo,
     CommandBufferBeginInfo, CommandBufferLevel, CommandBufferUsageFlags, CommandPool,
