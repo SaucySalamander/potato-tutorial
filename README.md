@@ -1,4 +1,4 @@
-# The Potato Engine
+# ash tutorial
 ![Rust](https://github.com/SaucySalamander/potato/workflows/Rust/badge.svg?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
